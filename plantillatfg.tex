@@ -1,0 +1,292 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                       CARREGA DE LA CLASSE DE DOCUMENT                      %
+%                                                                             %
+% Les opcions admissibles son:                                                %
+%      12pt / 11pt            (cos dels tipus de lletra; no feu servir 10pt)  %
+%                                                                             %
+% catalan/spanish/english     (llengua principal del treball)                 %
+%                                                                             % 
+% french/italian/german...    (si necessiteu fer servir alguna altra llengua) %
+%                                                                             %
+% listoffigures               (El document inclou un Index de figures)        %
+% listoftables                (El document inclou un Index de taules)         %
+% listofquadres               (El document inclou un Index de quadres)        %
+% listofalgorithms            (El document inclou un Index d'algorismes)      %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,spanish,listoffigures,listoftables]{tfgetsinf}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     CODIFICACIO DEL FITXER FONT                             %
+%                                                                             %
+%    windows fa servir normalment 'ansinew'                                   %
+%    amb linux es possible que siga 'latin1' o 'latin9'                       %
+%    Pero el mes recomanable es fer servir utf8 (unicode 8)                   %
+%                                          (si el vostre editor ho permet)    % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[utf8]{inputenc} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Para conseguir que la tabla de contenido no salga en rojo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\hypersetup{ colorlinks=true, linkcolor=black, urlcolor=cyan, }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                        ALTRES PAQUETS I DEFINICIONS                         %
+%                                                                             %
+% Carregueu aci els paquets que necessiteu i declareu les comandes i entorns  %
+%                                          (aquesta seccio pot ser buida)     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                        DADES DEL TREBALL                                    %
+%                                                                             %
+% titol, alumne, tutor i curs academic                                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{???? ????????? \\
+         ?????????????? ? ?????}
+\author{Jorge Rodríguez González}
+\tutor{Alfons Juan Císcar}
+\curs{2025-2026}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     PARAULES CLAU/PALABRAS CLAVE/KEY WORDS                  %
+%                                                                             %
+% Independentment de la llengua del treball, s'hi han d'incloure              %
+% les paraules clau i el resum en els tres idiomes                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\keywords{????, ?????????, ????, ?????????????????} % Paraules clau 
+         {?????, ???, ???????????????}              % Palabras clave
+         {?????, ????? ?????, ?????????????}        % Key words
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              INICI DEL DOCUMENT                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%              RESUMS DEL TFG EN VALENCIA, CASTELLA I ANGLES                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstract}
+????
+\end{abstract}
+\begin{abstract}[spanish]
+????
+\end{abstract}
+\begin{abstract}[english]
+????
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              CONTINGUT DEL TREBALL                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mainmatter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                  INTRODUCCIO                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introducción}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{Motivación}
+
+????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+\section{Objetivos}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{Estructura de la memoria}
+
+????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+%\section{Notes bibliografiques} %%%%% Opcional
+
+%????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         CAPITOLS (tants com calga)                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Preliminares}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+%==============================================================================
+
+\section{?? ???? ???? ? ?? ??}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%==============================================================================
+
+\chapter{MAESTRO}
+
+\section{Introducción y contexto}
+Uno de los principales factores que limita el rendimiento de los sistemas de AMT basados en el aprendizaje
+profundo es la disponibilidad de datos de entrenamiento etiquetados con alta precisión y en cantidad suficiente
+para que los modelos sean capaces de generalizar. Históricamente, los datasets disponibles para esta tarea, como \textbf{MAPS}
+(\foreign{english}{MIDI Aligned Piano Sounds}), que no supera las 70 horas de audio, 
+lo que suponía una barrera significativa para el entrenamiento de arquitecturas modernas.
+
+En este contexto, \textbf{Google Magenta} publicó en 2018 el dataset \textbf{MAESTRO} (\foreign{english}{Midi and Audio Edited for Synchronous Tracks and Organization}),
+que supuso un cambio de paradigma en el campo al ofrecer casi 200 horas de grabaciones de piano de alta calidad con alineación precisa entre audio y etiquetas MIDI.
+La publicación de MAESTRO demostró inmediatamente su impacto: el modelo \textbf{Onsets and Frames}, entrenado sobre MAESTRO alcanzó un \textbf{F1 de 67,43\%}
+en la evaluación sobre grabaciones Disklavier del conjunto MAPS, superando notablemente el \textbf{50,22\%} obtenido por el mismo modelo 
+entrenado sobre MAPS únicamente. Desde entonces MAESTRO se ha consolidado como el estándar de facto para la evaluación y comparación de sistemas de transcripción automática de piano.
+
+En este trabajo se utiliza la versión \textbf{V3.0.0} del dataset, publicada en 2020, que constituye una versión más de depurada y actualmente referencia en la comunidad investigadora.
+
+\section{Origen: International Piano-e-Competition}
+Los datos que constituyen MAESTRO provienen de grabaciones recogidas durante diez ediciones de la International Piano-e-Competition, una competición de 
+piano de nivel internacional celebrada anualmente en la que pianistas virtuosos interpretan sobre pianos de cola \textbf{Yamaha Disklavier}
+equipados con un sistema integrado de captura MIDI de alta precisión. Esta competición es la fuente exclusiva de todas las grabaciones del dataset, lo que dota al 
+conjunto de datos de una coherencia excepcional en términos de calidad de la interpretación, condiciones acústicas y equipamiento.
+
+\subsection{Yamaha Disklavier}
+El elemento técnico que garantiza la calidad de MAESTRO es el piano Yamaha Disklavier. Es un piano de cola acústico convencional al que se le ha añadido un sistema 
+electrónico de captura que registra, con alta precisión temporal, el movimiento de cada tecla y pedal durante la interpretación. A diferencia de los sintetizadores
+o controladores MIDI, el Disklavier produce sonido acústico real al mismo tiempo que genera los datos MIDI, lo que garantiza que el audio captado por los micrófonos
+y el MIDI registrado sean inherentemente sincrónicos.
+
+La alineación resultante entre la señal de audio y las etiquetas MIDI en MAESTRO es de aproximadamente $\pm 3~\mathrm{ms}$, muy inferior al umbral de percepción
+temporal humano (estimado en $20~\mathrm{ms}$), lo que hace que las etiquetas sean consideradas alineadas a nivel fonación. Esta precisión es fundamental para entrenar 
+modelos de transcripción: cualquier desalineación sistemática entre el onset de una nota en el audio y su etiqueta MIDI correspondiente introduce ruido en los gradientes
+durante el entrenamiento y degrada el rendimiento de los modelos.
+
+\section{Adquisición y anotación}
+\subsection{Captura del audio}
+El audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44\,1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
+PCM\footnote{PCM (\foreign{english}{Pulse Code Modulation}) es una técnica de representación digital de señales analógicas basada en el muestreo y la cuantización, ampliamente utilizada en sistemas de audio sin compresión.} estéreo.
+Esta calidad es suficiente para representar con fidelidad toda la gama de frecuencias audibles relevantes para el piano (aproximadamente $28~\mathrm{Hz}$ a $4~\mathrm{kHz}$ para los fundamentales,
+con armónicos que se extienden hasta 16-$20~\mathrm{kHz}$). Las grabaciones se almacenan sin compresión con pérdida, lo que preserva toda la información espectral original.
+
+\subsection{MIDI y anotación}
+El sistema MIDI del Disklavier captura automáticamente los siguientes eventos para cada interpretación:
+\begin{itemize}
+\item Velocidades de pulsación de teclas (\foreign{english}{key strike velocities}, canal MIDI, nota, velocidad 0-127): codifican la dinámica de cada nota individual.
+\item Posición del pedal sustain (Control Change CC64): el pedal más utilizado en el piano, que prolonga el sonido de una tecla.
+\item Posición del pedal sostenuto (Control Change CC66): permite mantener seleccionadas únicamente las notas que están sonando en el momento de su activación.
+\item Posición del pedal una corda (Control Change CC67): pedal izquierdo, que reduce el volumen y modifica el timbre.
+\end{itemize}
+
+La inclusión de los tres pedales hace a MAESTRO uno de los pocos datasets de transcripción de piano con \textbf{anotación de pedal completa}, lo que resulta
+especialmente relevante para sistemas que aspiran a una transcripción expresiva o a la síntesis de audio realista a partir de MIDI.
+
+Cada grabación se segmenta automáticamente en piezas musicales individuales y se anota con los siguientes metadatos:
+\begin{itemize}
+\item  Compositor canónico (nombre normalizado).
+\item Título de la obra.
+\item Año de la grabación.
+\item Partición sugerida (train/validation/test).
+\end{itemize}
+
+%==============================================================================
+
+\chapter{MFT-FiLM}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{?? ???? ???? ? ?? ??}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+%==============================================================================
+
+\chapter{Transkun}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{?? ???? ???? ? ?? ??}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                 CONCLUSIONS                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusiones}
+
+????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                BIBLIOGRAFIA                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{10}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MODEL D'ARTICLE                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibitem{light}
+   Jennifer~S. Light.
+   \newblock When computers were women.
+   \newblock \textit{Technology and Culture}, 40:3:455--483, juliol, 1999.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MODEL DE LLIBRE                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibitem{ifrah}
+   Georges Ifrah.
+   \newblock \textit{Historia universal de las cifras}.
+   \newblock Espasa Calpe, S.A., Madrid, sisena edició, 2008.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MODEL D'URL                                                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibitem{WAR}
+   Comunicat de premsa del Departament de la Guerra, 
+   emés el 16 de febrer de 1946. 
+   \newblock Consultat a 
+   \url{http://americanhistory.si.edu/comphist/pr1.pdf}.
+
+\end{thebibliography}
+\cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           APÈNDIXS  (Si n'hi ha!)                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\APPENDIX
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         LA CONFIGURACIO DEL SISTEMA                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Configuració del sistema}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{Fase d'inicialització}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+\section{Identificació de dispositius}
+
+????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                               ALTRES  APÈNDIXS                              %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\chapter{??? ???????????? ????}
+
+????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              FI DEL DOCUMENT                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
