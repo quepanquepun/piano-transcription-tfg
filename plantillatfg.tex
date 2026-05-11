@@ -42,6 +42,9 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{array}
+\usepackage{emptypage}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                        DADES DEL TREBALL                                    %
@@ -85,20 +88,62 @@ Addicionalment, s'avalua la capacitat de generalització de tots dos models sobr
 La transcripción automática de música (AMT) constituye uno de los problemas centrales de la recuperación de información musical (MIR), cuyo objetivo es convertir una señal de audio en una representación simbólica de la música interpretada.
 En el caso del piano, el objetivo es obtener a partir del audio una representación MIDI que capture con precisión los eventos de nota --tono, inicio, final y dinámica-- presentes en la interpretación. Este trabajo aborda la replicación y evaluación de dos sistemas del estado del arte para la transcripción automática.
 En primer lugar, se entrena un modelo MFT-FiLM (\foreign{english}{Multitask Frequency-Time Feature-wise Linear Modulation}) que combina convoluciones espectrales y redes recurrentes bidireccionales para la estimación conjunta de \textit{onsets}, \textit{offsets}, \textit{frames} y velocidades. A continuación, se entrena un modelo Transkun, un sistema basado en transformers que aborda la transcripción como un problema de traducción de secuencias. Ambos modelos se evalúan de forma cuantitativa sobre el conjunto de test de MAESTRO siguiendo el protocolo estándar (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
-Adicionalmente se evalúa la capacidad de generalización de ambos modelos sobre el dataset PiJAMA, cuya distribución de repertorio y audio difiere de MAESTRO, y se exploran modificaciones experimentales orientadas a la mejora del rendimiento de los modelos.
+Adicionalmente se evalúa la capacidad de generalización de ambos modelos sobre el \textit{dataset} PiJAMA, cuya distribución de repertorio y audio difiere de MAESTRO, y se exploran modificaciones experimentales orientadas a la mejora del rendimiento de los modelos.
 \end{abstract}
 \begin{abstract}[english]
 Automatic Music Transcription (AMT) constitutes one of the core problems in Music Information Retrieval (MIR), aiming to convert an audio signal into a symbolic representation of the performed music.
 In the case of the piano, the goal is to obtain a MIDI representation from the audio that accurately captures the note events --pitch, onset, offset, and dynamics-- present in the performance. This work addresses the replication and evaluation of two state-of-the-art systems for automatic transcription.
 First, an MFT-FiLM (Multitask Frequency-Time Feature-wise Linear Modulation) model is trained, which combines spectral convolutions and bidirectional recurrent networks for the joint estimation of onsets, offsets, frames, and velocities. Next, a Transkun model is trained, a \textit{transformer}-based system that approaches transcription as a sequence translation problem. Both models are quantitatively evaluated on the MAESTRO test set following the standard protocol (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
-Additionally, the generalization capability of both models is evaluated on the PiJAMA dataset, whose repertoire and audio distribution differs from MAESTRO, and experimental modifications aimed at improving the models' performance are explored.
+Additionally, the generalization capability of both models is evaluated on the PiJAMA \textit{dataset}, whose repertoire and audio distribution differs from MAESTRO, and experimental modifications aimed at improving the models' performance are explored.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                              CONTINGUT DEL TREBALL                          %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% LLISTA D'ACRÒNIMS / LISTA DE ACRÓNIMOS                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\chapter*{Lista de Acrónimos}
+\markboth{Lista de Acrónimos}{Lista de Acrónimos}
+\addcontentsline{toc}{chapter}{Lista de Acrónimos}
+
+\newcommand{\acronym}[2]{%
+  \noindent\textbf{#1}\hspace{1em}#2\par\vspace{8pt}%
+}
+
+\acronym{AMT}{\textit{Automatic Music Transcription} (Transcripción Automática de Música)}
+\acronym{ASAP}{\textit{Aligned Scores and Performances}}
+\acronym{CC}{\textit{Control Change} (mensaje de control MIDI)}
+\acronym{CQT}{\textit{Constant-Q Transform} (Transformada Q Constante)}
+\acronym{CSV}{\textit{Comma-Separated Values}}
+\acronym{FiLM}{\textit{Feature-wise Linear Modulation} (Modulación Lineal por Características)}
+\acronym{FG-LSTM}{\textit{Frequency-Grouped Long Short-Term Memory}}
+\acronym{FT-FiLM}{\textit{Frequency-Time Feature-wise Linear Modulation}}
+\acronym{IFT-FiLM}{\textit{Inter-Task Frequency-Time Feature-wise Linear Modulation}}
+\acronym{JSON}{\textit{JavaScript Object Notation}}
+\acronym{LSTM}{\textit{Long Short-Term Memory}}
+\acronym{MAESTRO}{\textit{MIDI and Audio Edited for Synchronous Tracks and Organization}}
+\acronym{MAPS}{\textit{MIDI Aligned Piano Sounds}}
+\acronym{MEI}{\textit{Music Encoding Initiative}}
+\acronym{MFT-FiLM}{\textit{Multitask Frequency-Time Feature-wise Linear Modulation}}
+\acronym{MIDI}{\textit{Musical Instrument Digital Interface}}
+\acronym{MIR}{\textit{Music Information Retrieval} (Recuperación de Información Musical)}
+\acronym{MTL}{\textit{Multitask Learning} (Aprendizaje Multitarea)}
+\acronym{PCM}{\textit{Pulse Code Modulation} (Modulación por Impulsos Codificados)}
+\acronym{PiJAMA}{\textit{Piano Jazz and More Audio}}
+\acronym{SLURM}{\textit{Simple Linux Utility for Resource Management}}
+\acronym{STFT}{\textit{Short-Time Fourier Transform} (Transformada de Fourier de Tiempo Corto)}
+\acronym{VRAM}{\textit{Video Random Access Memory}}
+\acronym{WAV}{\textit{Waveform Audio File Format}}
+
+
 \mainmatter
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                  INTRODUCCIO                                %
@@ -141,32 +186,43 @@ Additionally, the generalization capability of both models is evaluated on the P
 
 \chapter{MAESTRO}
 
-\section{Introducción y contexto}
+\section{Introducción}
 Uno de los principales factores que limita el rendimiento de los sistemas de AMT basados en el aprendizaje
 profundo es la disponibilidad de datos de entrenamiento etiquetados con alta precisión y en cantidad suficiente
-para que los modelos sean capaces de generalizar. Históricamente, los datasets disponibles para esta tarea, como \textbf{MAPS}
+para que los modelos sean capaces de generalizar. Hasta 2018, los \textit{datasets} disponibles para esta tarea, como \textbf{MAPS}
 (\foreign{english}{MIDI Aligned Piano Sounds}), no superaban las 70 horas de audio, 
-lo que suponía una barrera significativa para el entrenamiento de arquitecturas modernas.
+lo que suponía una barrera significativa para el entrenamiento de nuevos modelos~\cite{emiya2010maps}.
 
-En este contexto, \textbf{Google Magenta} publicó en 2018 el dataset \textbf{MAESTRO}~\cite{hawthorne2019maestro} (\foreign{english}{Midi and Audio Edited for Synchronous Tracks and Organization}),
-que supuso un cambio de paradigma en el campo al ofrecer casi 200 horas de grabaciones de piano de alta calidad con alineación precisa entre audio y etiquetas MIDI.
+En el ámbito de este trabajo, \textbf{Google Magenta} publicó el \textit{dataset} \textbf{MAESTRO}~\cite{hawthorne2019maestro} (\foreign{english}{Midi and Audio Edited for Synchronous Tracks and Organization}),
+que supuso un cambio de paradigma al ofrecer casi 200 horas de grabaciones de piano de alta calidad con alineación precisa entre audio y etiquetas MIDI.
 La publicación de MAESTRO demostró inmediatamente su impacto: el modelo \textbf{Onsets and Frames}, entrenado sobre MAESTRO alcanzó un \textbf{F1 de 67,43\%}
 en la evaluación sobre grabaciones Disklavier del conjunto MAPS, superando notablemente el \textbf{50,22\%} obtenido por el mismo modelo 
-entrenado sobre MAPS únicamente. Desde entonces, MAESTRO se ha consolidado como el estándar de facto para la evaluación y comparación de sistemas de transcripción automática de piano.
+entrenado sobre MAPS únicamente~\cite{hawthorne2018onsetsframes,hawthorne2019maestro}. Desde entonces, MAESTRO se ha consolidado como el estándar de facto para la evaluación y comparación de sistemas de transcripción automática de piano.
 
-En este trabajo se utiliza la versión \textbf{V3.0.0}~\cite{magenta2020maestrov3} del dataset, publicada en 2020, que constituye una versión más depurada y es actualmente la referencia en la comunidad investigadora.
+En este trabajo se utiliza la versión \textbf{V3.0.0}~\cite{magenta2020maestrov3} del \textit{dataset}, publicada en 2020, que constituye una versión más depurada y es actualmente la referencia en la comunidad investigadora.
 
-\section{Origen: International Piano-e-Competition}
+Durante este capítulo se describe en detalle el origen y la plataforma de grabación de MAESTRO, el proceso de adquisición y anotación de los datos, así como las principales características y evolución del \textit{dataset}~\cite{hawthorne2019maestro,magenta2020maestrov3}. A continuación se presenta su distribución y licencia, se discuten sus limitaciones y su relevancia para este trabajo, y finalmente se explica el protocolo de evaluación estándar que se emplea de forma consolidada en la literatura para valorar los sistemas de transcripción automática de piano entrenados sobre MAESTRO~\cite{hawthorne2018onsetsframes,wang2025mftfilm,toyama2023transkun}.
+
+\section{Origen de los datos}
 Los datos que constituyen MAESTRO provienen de grabaciones recogidas durante diez ediciones de la International Piano-e-Competition, una competición de 
 piano de nivel internacional celebrada anualmente en la que pianistas virtuosos interpretan sobre pianos de cola \textbf{Yamaha Disklavier}
-equipados con un sistema integrado de captura MIDI de alta precisión. Esta competición es la fuente exclusiva de todas las grabaciones del dataset, lo que dota al 
+equipados con un sistema integrado de captura MIDI de alta precisión~\cite{magenta2020maestrov3}. Esta competición es la fuente exclusiva de todas las grabaciones del dataset, lo que dota al 
 conjunto de datos de una coherencia excepcional en términos de calidad de la interpretación, condiciones acústicas y equipamiento.
 
-\subsection{Yamaha Disklavier}
-El elemento técnico que garantiza la calidad de MAESTRO es el piano Yamaha Disklavier. Es un piano de cola acústico convencional al que se le ha añadido un sistema 
-electrónico de captura que registra, con alta precisión temporal, el movimiento de cada tecla y pedal durante la interpretación. A diferencia de los sintetizadores
+
+En cuanto al instrumento empleado para la captación, el elemento técnico que garantiza la calidad de MAESTRO es el piano Yamaha Disklavier, un piano de cola acústico convencional al que se le ha añadido un sistema 
+electrónico de captura que registra, con alta precisión temporal, el movimiento de cada tecla y pedal durante la interpretación~\cite{hawthorne2019maestro}. Este sistema está formado por un conjunto de sensores situados bajo las teclas y pedales, que detectan la posición y velocidad de cada elemento, así como actuadores que permiten reproducir automáticamente la interpretación a partir de los datos MIDI~\cite{yamaha_disklavier}. A diferencia de los sintetizadores
 o controladores MIDI, el Disklavier produce sonido acústico real al mismo tiempo que genera los datos MIDI, lo que garantiza que el audio captado por los micrófonos
-y el MIDI registrado sean inherentemente sincrónicos.
+y el MIDI registrado sean inherentemente sincrónicos~\cite{hawthorne2019maestro}. La Figura~\ref{fig:disklavier_sensores} muestra cómo los sensores y actuadores del Disklavier se integran bajo el teclado acústico.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/disklavier.jpg}
+  \caption{ Sistema de sensores de un Yamaha Disklavier~\cite{yamaha_disklavier}.}
+  \label{fig:disklavier_sensores}
+\end{figure}
+
+Los sensores ópticos registran en tiempo real el movimiento de cada tecla y pedal, mientras que los actuadores permiten reproducir automáticamente la interpretación a partir de los eventos MIDI obtenidos~\cite{yamaha_disklavier}.
 
 La alineación resultante entre la señal de audio y las etiquetas MIDI en MAESTRO es de aproximadamente $\pm 3~\mathrm{ms}$, muy inferior al umbral de percepción
 temporal humano (estimado en $20~\mathrm{ms}$), lo que hace que las etiquetas se consideren alineadas a nivel de fonación. Esta precisión es fundamental para entrenar 
@@ -174,14 +230,14 @@ modelos de transcripción: cualquier desalineación sistemática entre el onset 
 durante el entrenamiento y degrada el rendimiento de los modelos.
 
 \section{Adquisición y anotación}
-\subsection{Captura del audio}
-El audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
+
+En primer lugar, el audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
 PCM\footnote{PCM (\foreign{english}{Pulse Code Modulation}) es una técnica de representación digital de señales analógicas basada en el muestreo y la cuantización, ampliamente utilizada en sistemas de audio sin compresión.} estéreo.
 Esta calidad es suficiente para representar con fidelidad toda la gama de frecuencias audibles relevantes para el piano (aproximadamente $28~\mathrm{Hz}$ a $4~\mathrm{kHz}$ para los fundamentales,
 con armónicos que se extienden hasta 16-$20~\mathrm{kHz}$). Las grabaciones se almacenan sin compresión con pérdida, lo que preserva toda la información espectral original.
 
-\subsection{MIDI y anotación}
-El sistema MIDI del Disklavier captura automáticamente los siguientes eventos para cada interpretación:
+
+De forma simultánea a la captura del audio, el sistema MIDI del Disklavier captura automáticamente los siguientes eventos para cada interpretación:
 \begin{itemize}
 \item Velocidades de pulsación de teclas (\foreign{english}{key strike velocities}, canal MIDI, nota, velocidad 0-127): codifican la dinámica de cada nota individual.
 \item Posición del pedal \textit{sustain} (Control Change CC64): el pedal más utilizado en el piano, que prolonga el sonido de una tecla.
@@ -189,7 +245,7 @@ El sistema MIDI del Disklavier captura automáticamente los siguientes eventos p
 \item Posición del pedal \textit{una corda} (Control Change CC67): pedal izquierdo, que reduce el volumen y modifica el timbre.
 \end{itemize}
 
-La inclusión de los tres pedales hace a MAESTRO uno de los pocos datasets de transcripción de piano con \textbf{anotación de pedal completa}, lo que resulta
+La inclusión de los tres pedales hace a MAESTRO uno de los pocos \textit{datasets} de transcripción de piano con \textbf{anotación de pedal completa}, lo que resulta
 especialmente relevante para sistemas que aspiran a una transcripción expresiva o a la síntesis de audio realista a partir de MIDI.
 
 Cada grabación se segmenta automáticamente en piezas musicales individuales y se anota con los siguientes metadatos:
@@ -200,14 +256,15 @@ Cada grabación se segmenta automáticamente en piezas musicales individuales y 
 \item Partición sugerida (train/validation/test).
 \end{itemize}
 
+Estos metadatos permiten analizar el repertorio, controlar posibles solapamientos entre particiones y reproducir de forma precisa los protocolos de evaluación propuestos por los autores~\cite{magenta2020maestrov3}.
 \section{Características del dataset}
-\subsection{Composición}
-MAESTRO V3.0.0 está formado por un total de $1\,276$ grabaciones de interpretaciones de piano, que suman $198{,}7$ horas de audio y más de $7{,}4$ millones de eventos MIDI.
+
+MAESTRO V3.0.0 está formado por un total de $1\,276$ grabaciones de interpretaciones de piano, que suman $198{,}7$ horas de audio y más de $7{,}4$ millones de eventos MIDI~\cite{magenta2020maestrov3}.
 El repertorio incluye obras de 60 compositores distintos que se asocian principalmente a la música clásica occidental entre los siglos XVII y XX.
 % ============================================================
 % TABLA: Top 20 compositores en MAESTRO V3.0.0
 % ============================================================
-\begin{table}[ht]
+\begin{table}[h]
   \centering
   \resizebox{\textwidth}{!}{
     \begin{tabular}{lrrr}
@@ -242,13 +299,13 @@ El repertorio incluye obras de 60 compositores distintos que se asocian principa
   \label{tab:maestro_compositores}
 \end{table}
 
-La tabla~\ref{tab:maestro_compositores} muestra la distribución típica de competiciones internacionales de piano, que tienden a centrarse en el período Romántico y en los 
+La Tabla~\ref{tab:maestro_compositores} muestra la distribución típica de competiciones internacionales de piano, que tienden a centrarse en el período Romántico y en los 
 grandes compositores del clasicismo tardío.
 
-\subsection{Particiones}
+
 Una característica fundamental de MAESTRO es su política de particionado, que distingue el dataset de otras colecciones de audio-MIDI. El criterio establecido
 por los autores es el siguiente: una misma composición no puede aparecer simultáneamente en más de una partición, aunque haya sido interpretada por distintos pianistas
-en periodos diferentes.
+en periodos diferentes~\cite{magenta2020maestrov3}.
 
 Esta decisión de diseño es crucial para garantizar la validez de los experimentos. Si múltiples interpretaciones de una misma obra aparecieran en entrenamiento y test,
 un modelo podría aprender características tímbricas o estructurales específicas de esa obra y obtener resultados artificialmente buenos en la evaluación sin haber generalizado
@@ -256,11 +313,12 @@ correctamente. De esta forma, los modelos se evalúan sobre obras no vistas en e
 
 Las particiones están predefinidas y publicadas con el dataset, lo que garantiza la reproductibilidad de los experimentos y permite la comparación directa de distintos modelos.
 Esto es fundamental en un campo como AMT, en el que pequeñas diferencias en la partición de datos pueden producir variaciones significativas en los resultados reportados.
-En la tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales por partición.
+En la Tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales por partición.
+
 % ============================================================
 % TABLA Estadísticas por partición MAESTRO
 % ============================================================
-\begin{table}[ht]
+\begin{table}[h]
   \centering
   \begin{tabular}{lrrrr}
     \hline
@@ -283,12 +341,12 @@ En la tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales po
 
 
 \section{Evolución del dataset}
-MAESTRO ya va por su tercera versión desde su publicación original en 2018. En la tabla~\ref{tab:maestro_versions} podemos ver características y principales cambios de cada versión.
+MAESTRO ya va por su tercera versión desde su publicación original en 2018. En la Tabla~\ref{tab:maestro_versions} podemos ver características y principales cambios de cada versión.
 % ============================================================
 % TABLA Evolución entre versiones
 % ============================================================
 
-  \begin{table}[ht]
+  \begin{table}[h]
     \centering
     \resizebox{\textwidth}{!}{
       \begin{tabular}{ccrrrp{6cm}}
@@ -360,21 +418,16 @@ Finalmente, las particiones fijas y predefinidas garantizan la reproductibilidad
 
 \section{Evaluación estándar}
 \label{sec:metricas}
-La evaluación cuantitativa de los sistemas de transcripción automática de piano entrenados sobre MAESTRO sigue un protocolo consolidado en la comunidad, implementado mediante la librería \texttt{mir\_eval}. Este protocolo 
+La evaluación cuantitativa de los sistemas de transcripción automática de piano entrenados sobre MAESTRO sigue un protocolo consolidado en la comunidad, implementado mediante la librería \texttt{mir\_eval}~\cite{raffel2014mireval}. Este protocolo 
 es el empleado de forma invariante por todos los modelos del estado del arte que reportan resultados sobre este \textit{dataset}, incluyendo los modelos reproducidos en este trabajo, MFT-FiLM y Transkun. Es por esto que en esta sección veremos cómo se evalúan ambos modelos.
-
-\subsection{Representación de la salida}
 
 Antes de aplicar las métricas, la salida de cada modelo, ya sea en forma de \textit{piano roll} (MFT-FiLM) o en forma de intervalos decodificados (Transkun) se convierte en un conjunto de eventos MIDI discretos de la forma $\{(\text{tono},\, t_{\text{onset}},\, t_{\text{offset}},\, v)\}$,
 donde el tono es un valor entero en $[21, 108]$ (las 88 teclas del piano estándar), los tiempos se expresan en segundos y la velocidad $v \in [0, 127]$ es un entero MIDI. La evaluación opera directamente sobre estos eventos discretos
 extraídos del MIDI de salida, comparándolos con los eventos del MIDI de \foreign{english}{ground truth}, sin acceder en ningún momento a la representación interna del modelo, de forma que se garantiza la independencia de las métricas respecto a la arquitectura empleada.
 
-\subsection{Familias de métricas}
-Las métricas se organizan en dos categorías en función del nivel de abstracción al que operan.
+Las métricas previamente mencionadas se organizan en dos categorías en función del nivel de abstracción al que operan: nivel de trama y nivel de nota.
 
-\subsubsection{Métricas a nivel de trama (\textit{frame-level})}
-
-Las métricas de trama cuantifican la capacidad del modelo para estimar qué teclas están activas en cada instante temporal, con independencia de cómo se delimiten los eventos. Para ello, tanto la predicción como el \foreign{english}{ground truth}
+Las \textbf{métricas a nivel de trama} (\textit{frame-level}) cuantifican la capacidad del modelo para estimar qué teclas están activas en cada instante temporal, con independencia de cómo se delimiten los eventos. Para ello, tanto la predicción como el \foreign{english}{ground truth}
 se convierten en matrices binarias de dimensiones $T \times 88$, con resolución temporal infinitesimal (equivalente a un piano roll continuo), comparando el estado de activación de cada tecla en cada instante.
 
 Se calculan la \textbf{precisión} ($P$), la \textbf{exhaustividad} ($R$, \textit{Recall}) y la \textbf{puntuación $F_1$}:
@@ -391,11 +444,11 @@ $FP$ los falsos positivos (activaciones predichas incorrectamente) y $FN$ los fa
 (activaciones del \textit{ground truth} no detectadas). Estas métricas de trama son las más
 directamente relacionadas con la audición subjetiva de la transcripción, ya que capturan el
 porcentaje de tiempo en que la armonía reconstruida es correcta.
+En términos musicales, una precisión alta indica que el modelo casi no introduce notas espurias que no aparecen en la grabación original, mientras que una exhaustividad alta implica que rara vez se olvida de activar notas que sí están presentes en la interpretación.
 
 
-\subsubsection{Métricas a nivel de nota}
 
-Las métricas de nota operan sobre los eventos discretos y evalúan la capacidad del modelo para segmentar correctamente los límites temporales de las notas. Hay tres variantes de complejidad creciente:
+Por otro lado, las \textbf{métricas a nivel de nota} (\textit{note-level}) operan sobre los eventos discretos y evalúan la capacidad del modelo para segmentar correctamente los límites temporales de las notas. Hay tres variantes de complejidad creciente:
 
 \begin{itemize}
   \item \textbf{Nota con \textit{onset}} (\textit{Note Onset}): una nota predicha se considera
@@ -419,9 +472,11 @@ Las métricas de nota operan sobre los eventos discretos y evalúan la capacidad
   transcripción completa de \textit{performance} MIDI.
 \end{itemize}
 
+Desde la perspectiva de un intérprete, estas métricas de nota se aproximan mejor a la noción de “partitura correcta”: no basta con que las notas suenen en algún momento, sino que deben empezar y terminar en puntos temporales razonables y con una intensidad coherente con la ejecución original.
+
 La Tabla~\ref{tab:metricas_resumen} resume las condiciones de aceptación de cada variante.
 
-\begin{table}[ht]
+\begin{table}[h]
   \centering
   \caption{Condiciones de aceptación de un evento predicho como verdadero positivo según
   la variante de métrica de nota empleada.}
@@ -443,8 +498,8 @@ La Tabla~\ref{tab:metricas_resumen} resume las condiciones de aceptación de cad
   }
 \end{table}
 
-\subsection{Promediado y convenciones de reporte}
-Todos los valores de las métricas se \textbf{promedian sobre el numero de piezas} del conjunto de evaluación, en lugar de calcularse de forma global sobre todas las notas. Este criterio es adoptado de forma uniforme por todos los trabajos de referencia ~\cite{hawthorne2018onsetsframes, wang2025mftfilm,toyama2023transkun}.
+
+Todos los valores de las métricas se \textbf{promedian sobre el número de piezas} del conjunto de evaluación, en lugar de calcularse de forma global sobre todas las notas. Este criterio es adoptado de forma uniforme por todos los trabajos de referencia ~\cite{hawthorne2018onsetsframes, wang2025mftfilm,toyama2023transkun}.
 
 Los valores de $F_1$ son los indicadores principales de rendimiento en la literatura de AMT, siendo la \textbf{\textit{Note Onset} $F_1$} la métrica más citada para comparar modelos, y la \textbf{\textit{Note w/ Offset \& Velocity} $F_1$} la
 más representativa de la calidad de la transcripción completa.
@@ -568,9 +623,9 @@ Las dimensiones de los canales son $C = 64$ en las ramas \foreign{english}{onset
 \subsection{Capas de salida y decodificación}
 Cada rama dispone de una capa de salida que ajusta el número de canales al objetivo de la subtarea correspondiente. La capa sigue el esquema: expansión a $2C$ canales,
 seguida de una capa de \foreign{english}{dropout} con tasa $0{,}1$, activación GELU (que actúa como una versión suavizada de una ReLU), y compresión al número de canales objetivo~\cite{wang2025mftfilm}.
-La tabla~\ref{tab:salidas} resume las configuraciones de salida de cada rama.
+La Tabla~\ref{tab:salidas} resume las configuraciones de salida de cada rama.
 
-\begin{table}[ht]
+\begin{table}[h]
   \centering
   \caption{Configuración de las capas de salida de cada rama del sistema MFT-FiLM.}
   \label{tab:salidas}
@@ -733,7 +788,7 @@ por los autores. Por otro lado se eliminó completamente el árbol de directorio
 \subsection{Configuración de hiperparámetros}
 El archivo central de configuración del repositorio es \texttt{constant\_macro.py}, que controla todos los hiperparámetros y rutas del sistema. Para replicar las condiciones descritas en el artículo original, se ajustaron los parámetros que se muestran en la Tabla~\ref{tab:config}.
 
-\begin{table}[ht]
+\begin{table}[h]
   \centering
   \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py} para la
   replicación del entrenamiento sobre MAESTRO v3.0.0.}
@@ -874,73 +929,63 @@ mejor modelo alcanzado durante las 30 épocas ejecutadas. Este modelo resultó l
 
 \begin{thebibliography}{10}
 
-\bibitem{hawthorne2019maestro}
-Curtis Hawthorne, Andriy Stasyuk, Adam Roberts, Ian Simon,
-Cheng-Zhi~Anna Huang, Sander Dieleman y Douglas Eck.
-\newblock Enabling factorized piano music modeling and generation
-  with the {MAESTRO} dataset.
-\newblock \textit{International Conference on Learning Representations
-  (ICLR)}, 2019.
-\newblock Disponible en \url{https://arxiv.org/abs/1810.12247}.
+\bibitem{emiya2010maps}
+Valentin Emiya, Nancy Bertin, Bertrand David y Roland Badeau.
+\newblock {MAPS} - A piano database for multipitch estimation and automatic transcription of music.
+\newblock \textit{INRIA Technical Report}, 2010.
+
+\bibitem{foscarin2023musicallyinformed}
+Francesco Foscarin, Katharina Hoedt, Gerhard Widmer y Maarten Grachten.
+\newblock Towards musically informed evaluation of piano transcription models.
+\newblock \textit{arXiv preprint arXiv:2406.08454}, 2024.
 
 \bibitem{magenta2020maestrov3}
 {Google Magenta}.
-\newblock The {MAESTRO} dataset v3.0.0, 2020.
-\newblock Consultado en marzo de 2026 en
-  \url{https://magenta.tensorflow.org/datasets/maestro}.
+\newblock The {MAESTRO} dataset v3.0.0.
+\newblock 2020.
 
+\bibitem{yamaha_disklavier}
+Yamaha Corporation.
+\newblock \emph{Disklavier pianos.}
+\newblock Disponible en:
+\url{https://usa.yamaha.com/products/musical_instruments/pianos/disklavier/index.html}
+\newblock Consultado en: mayo de 2026.
+
+\bibitem{hawthorne2018onsetsframes}
+Curtis Hawthorne, Erich Elsen, Jialin Song, Adam Roberts, Ian Simon, Colin Raffel, Jesse Engel, Sageev Oore y Douglas Eck.
+\newblock Onsets and frames: Dual-objective piano transcription.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, pp. 50--57, 2018.
+
+\bibitem{hawthorne2019maestro}
+Curtis Hawthorne, Andriy Stasyuk, Adam Roberts, Ian Simon, Cheng-Zhi~Anna Huang, Sander Dieleman y Douglas Eck.
+\newblock Enabling factorized piano music modeling and generation with the {MAESTRO} dataset.
+\newblock \textit{International Conference on Learning Representations (ICLR)}, 2019.
+
+\bibitem{raffel2014mireval}
+Colin Raffel, Brian McFee, Eric J.~Humphrey, Justin Salamon, Oriol Nieto, Dawen Liang y Daniel P.~W. Ellis.
+\newblock mir\_eval: A transparent implementation of common {MIR} metrics.
+\newblock \textit{Proceedings of the 15th International Conference on Music Information Retrieval}, 2014.
+
+\bibitem{kong2021highres}
+Qiuqiang Kong, Bochen Li, Xuchen Song, Yuan Wan y Yuxuan Wang.
+\newblock High-resolution piano transcription with pedals by regressing onset and offset times.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, vol. 29, pp. 3707--3717, 2021.
+
+
+\bibitem{wang2024hatanet}
+Qi Wang, Mingkuan Liu, Changchun Bao y Maoshen Jia.
+\newblock Harmonic-aware frequency and time attention for automatic piano transcription.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, vol. 32, pp. 2140--2152, 2024.
+
+\bibitem{wang2025mftfilm}
+Qi Wang, Mingkuan Liu y Maoshen Jia.
+\newblock Multitask frequency-time feature-wise linear modulation for piano transcription with pedal.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, vol. 33, pp. 1049--1062, 2025.
 
 \bibitem{toyama2023transkun}
 Yujia Yan, Frank Cwitkowitz y Zhiyao Duan.
-\newblock Transkun: Transcription of keyboard music with
-  attention-based {U-Net}.
-\newblock \textit{Proceedings of the International Society for Music
-  Information Retrieval (ISMIR)}, 2023.
-\newblock Disponible en \url{https://arxiv.org/abs/2306.10801}.
-
-
-\bibitem{kong2021mftfilm}
-Qiuqiang Kong, Bochen Li, Xuchen Song, Yuan Wan y Yuxuan Wang.
-\newblock High-resolution piano transcription with pedals by
-  regressing onset and offset times.
-\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and
-  Language Processing}, 29:3707--3717, 2021.
-\newblock Disponible en \url{https://arxiv.org/abs/2010.01815}.
-
-
-\bibitem{hawthorne2018onsetsframes}
-Curtis Hawthorne, Erich Elsen, Jialin Song, Adam Roberts,
-Ian Simon, Colin Raffel, Jesse Engel, Sageev Oore
-y Douglas Eck.
-\newblock Onsets and frames: Dual-objective piano transcription.
-\newblock \textit{Proceedings of the International Society for Music
-  Information Retrieval (ISMIR)}, págs. 50--57, 2018.
-\newblock Disponible en \url{https://arxiv.org/abs/1710.11153}.
-
-\bibitem{bytedance2020piano}
-{ByteDance Research}.
-\newblock Piano transcription.
-\newblock Consultado en marzo de 2026 en
-  \url{https://github.com/bytedance/piano_transcription}.
-
-
-\bibitem{foscarin2023musicallyinformed}
-Francesco Foscarin, Katharina Hoedt, Gerhard Widmer
-y Maarten Grachten.
-\newblock Towards musically informed evaluation of piano
-  transcription models.
-\newblock \textit{arXiv preprint}, 2024.
-\newblock Disponible en \url{https://arxiv.org/abs/2406.08454}.
-
-\bibitem{wang2024hatanet}
-   Qi Wang, Mingkuan Liu, Changchun Bao y Maoshen Jia.
-   \newblock Harmonic-Aware Frequency and Time Attention for Automatic Piano Transcription.
-   \newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, vol. 32, 2024.
-
-\bibitem{wang2025mftfilm}
-   Qi Wang, Mingkuan Liu y Maoshen Jia.
-   \newblock Multitask Frequency-Time Feature-Wise Linear Modulation for Piano Transcription With Pedal.
-   \newblock \textit{IEEE/ACM Transactions on Audio, Speech and Language Processing}, vol. 33, pp. 1049--1062, 2025.
+\newblock Transkun: Transcription of keyboard music with attention-based {U-Net}.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2023.
 
 \end{thebibliography}
 
