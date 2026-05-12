@@ -44,6 +44,7 @@
 \usepackage{amssymb}
 \usepackage{array}
 \usepackage{emptypage}
+\usepackage{float}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,6 +119,8 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{CC}{\textit{Control Change} (mensaje de control MIDI)}
 \acronym{CQT}{\textit{Constant-Q Transform} (Transformada Q Constante)}
 \acronym{CSV}{\textit{Comma-Separated Values}}
+\acronym{MEI}{\textit{Music Encoding Initiative}}
+\acronym{MusicXML}{\textit{Music Extensible Markup Language}}
 \acronym{FiLM}{\textit{Feature-wise Linear Modulation} (Modulación Lineal por Características)}
 \acronym{FG-LSTM}{\textit{Frequency-Grouped Long Short-Term Memory}}
 \acronym{FT-FiLM}{\textit{Frequency-Time Feature-wise Linear Modulation}}
@@ -187,7 +190,7 @@ Additionally, the generalization capability of both models is evaluated on the P
 \chapter{MAESTRO}
 
 \section{Introducción}
-Uno de los principales factores que limita el rendimiento de los sistemas de AMT basados en el aprendizaje
+Uno de los principales factores que limitan el rendimiento de los sistemas de AMT basados en el aprendizaje
 profundo es la disponibilidad de datos de entrenamiento etiquetados con alta precisión y en cantidad suficiente
 para que los modelos sean capaces de generalizar. Hasta 2018, los \textit{datasets} disponibles para esta tarea, como \textbf{MAPS}
 (\foreign{english}{MIDI Aligned Piano Sounds}), no superaban las 70 horas de audio, 
@@ -201,10 +204,23 @@ entrenado sobre MAPS únicamente~\cite{hawthorne2018onsetsframes,hawthorne2019ma
 
 En este trabajo se utiliza la versión \textbf{V3.0.0}~\cite{magenta2020maestrov3} del \textit{dataset}, publicada en 2020, que constituye una versión más depurada y es actualmente la referencia en la comunidad investigadora.
 
-Durante este capítulo se describe en detalle el origen y la plataforma de grabación de MAESTRO, el proceso de adquisición y anotación de los datos, así como las principales características y evolución del \textit{dataset}~\cite{hawthorne2019maestro,magenta2020maestrov3}. A continuación se presenta su distribución y licencia, se discuten sus limitaciones y su relevancia para este trabajo, y finalmente se explica el protocolo de evaluación estándar que se emplea de forma consolidada en la literatura para valorar los sistemas de transcripción automática de piano entrenados sobre MAESTRO~\cite{hawthorne2018onsetsframes,wang2025mftfilm,toyama2023transkun}.
+Este capítulo analiza el \textit{dataset} MAESTRO. La
+Sección~\ref{sec:maestro_origen} describe su origen en la
+\textit{International Piano-e-Competition} y el uso de pianos
+Yamaha Disklavier. El proceso de adquisición y anotación se
+detalla en la Sección~\ref{sec:maestro_adquisicion}, mientras
+que sus características técnicas, evolución y licenciamiento
+se exponen en las Secciones~\ref{sec:maestro_caracteristicas},
+\ref{sec:maestro_evolucion} y \ref{sec:maestro_distribucion}, respectivamente.
+Posteriormente, se discuten sus limitaciones %
+(Sección~\ref{sec:maestro_limitaciones}) y su relevancia para
+este trabajo (Sección~\ref{sec:maestro_relevancia}). %
+Finalmente, la Sección~\ref{sec:metricas} presenta el protocolo
+de evaluación estándar para la transcripción automática de piano.
 
 \section{Origen de los datos}
-Los datos que constituyen MAESTRO provienen de grabaciones recogidas durante diez ediciones de la International Piano-e-Competition, una competición de 
+\label{sec:maestro_origen}
+Los datos que constituyen MAESTRO provienen de grabaciones recogidas durante diez ediciones de la \textit{International Piano-e-Competition}, una competición de 
 piano de nivel internacional celebrada anualmente en la que pianistas virtuosos interpretan sobre pianos de cola \textbf{Yamaha Disklavier}
 equipados con un sistema integrado de captura MIDI de alta precisión~\cite{magenta2020maestrov3}. Esta competición es la fuente exclusiva de todas las grabaciones del dataset, lo que dota al 
 conjunto de datos de una coherencia excepcional en términos de calidad de la interpretación, condiciones acústicas y equipamiento.
@@ -213,16 +229,27 @@ conjunto de datos de una coherencia excepcional en términos de calidad de la in
 En cuanto al instrumento empleado para la captación, el elemento técnico que garantiza la calidad de MAESTRO es el piano Yamaha Disklavier, un piano de cola acústico convencional al que se le ha añadido un sistema 
 electrónico de captura que registra, con alta precisión temporal, el movimiento de cada tecla y pedal durante la interpretación~\cite{hawthorne2019maestro}. Este sistema está formado por un conjunto de sensores situados bajo las teclas y pedales, que detectan la posición y velocidad de cada elemento, así como actuadores que permiten reproducir automáticamente la interpretación a partir de los datos MIDI~\cite{yamaha_disklavier}. A diferencia de los sintetizadores
 o controladores MIDI, el Disklavier produce sonido acústico real al mismo tiempo que genera los datos MIDI, lo que garantiza que el audio captado por los micrófonos
-y el MIDI registrado sean inherentemente sincrónicos~\cite{hawthorne2019maestro}. La Figura~\ref{fig:disklavier_sensores} muestra cómo los sensores y actuadores del Disklavier se integran bajo el teclado acústico.
+y el MIDI registrado sean inherentemente sincrónicos~\cite{hawthorne2019maestro}. 
+
+La Figura~\ref{fig:disklavier_sensores} ilustra la disposición de
+estos componentes bajo el teclado. La clave tecnológica que aporta
+valor a este \textit{dataset} reside en el uso de \textbf{sensores
+ópticos sin contacto}. Al evitar cualquier fricción o resistencia
+mecánica adicional, el sistema logra escanear continuamente el
+movimiento del martillo y la tecla para medir la dinámica (velocidad)
+y los instantes de \textit{onset} y \textit{offset} con absoluta
+fidelidad, todo ello preservando intacta la experiencia táctil
+del intérprete~\cite{yamaha_disklavier}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\textwidth]{figuras/disklavier.jpg}
-  \caption{ Sistema de sensores de un Yamaha Disklavier~\cite{yamaha_disklavier}.}
+  \caption[Sistema de sensores de un Yamaha Disklavier]{%
+    Sistema de sensores de un Yamaha Disklavier, que registra en tiempo real el movimiento e intensidad de cada tecla y pedal durante la interpretación~\cite{yamaha_disklavier}.
+
+  }
   \label{fig:disklavier_sensores}
 \end{figure}
-
-Los sensores ópticos registran en tiempo real el movimiento de cada tecla y pedal, mientras que los actuadores permiten reproducir automáticamente la interpretación a partir de los eventos MIDI obtenidos~\cite{yamaha_disklavier}.
 
 La alineación resultante entre la señal de audio y las etiquetas MIDI en MAESTRO es de aproximadamente $\pm 3~\mathrm{ms}$, muy inferior al umbral de percepción
 temporal humano (estimado en $20~\mathrm{ms}$), lo que hace que las etiquetas se consideren alineadas a nivel de fonación. Esta precisión es fundamental para entrenar 
@@ -230,6 +257,7 @@ modelos de transcripción: cualquier desalineación sistemática entre el onset 
 durante el entrenamiento y degrada el rendimiento de los modelos.
 
 \section{Adquisición y anotación}
+\label{sec:maestro_adquisicion}
 
 En primer lugar, el audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
 PCM\footnote{PCM (\foreign{english}{Pulse Code Modulation}) es una técnica de representación digital de señales analógicas basada en el muestreo y la cuantización, ampliamente utilizada en sistemas de audio sin compresión.} estéreo.
@@ -258,13 +286,14 @@ Cada grabación se segmenta automáticamente en piezas musicales individuales y 
 
 Estos metadatos permiten analizar el repertorio, controlar posibles solapamientos entre particiones y reproducir de forma precisa los protocolos de evaluación propuestos por los autores~\cite{magenta2020maestrov3}.
 \section{Características del dataset}
+\label{sec:maestro_caracteristicas}
 
 MAESTRO V3.0.0 está formado por un total de $1\,276$ grabaciones de interpretaciones de piano, que suman $198{,}7$ horas de audio y más de $7{,}4$ millones de eventos MIDI~\cite{magenta2020maestrov3}.
 El repertorio incluye obras de 60 compositores distintos que se asocian principalmente a la música clásica occidental entre los siglos XVII y XX.
 % ============================================================
 % TABLA: Top 20 compositores en MAESTRO V3.0.0
 % ============================================================
-\begin{table}[h]
+\begin{table}[H]
   \centering
   \resizebox{\textwidth}{!}{
     \begin{tabular}{lrrr}
@@ -302,23 +331,14 @@ El repertorio incluye obras de 60 compositores distintos que se asocian principa
 La Tabla~\ref{tab:maestro_compositores} muestra la distribución típica de competiciones internacionales de piano, que tienden a centrarse en el período Romántico y en los 
 grandes compositores del clasicismo tardío.
 
-
-Una característica fundamental de MAESTRO es su política de particionado, que distingue el dataset de otras colecciones de audio-MIDI. El criterio establecido
-por los autores es el siguiente: una misma composición no puede aparecer simultáneamente en más de una partición, aunque haya sido interpretada por distintos pianistas
-en periodos diferentes~\cite{magenta2020maestrov3}.
-
-Esta decisión de diseño es crucial para garantizar la validez de los experimentos. Si múltiples interpretaciones de una misma obra aparecieran en entrenamiento y test,
-un modelo podría aprender características tímbricas o estructurales específicas de esa obra y obtener resultados artificialmente buenos en la evaluación sin haber generalizado
-correctamente. De esta forma, los modelos se evalúan sobre obras no vistas en entrenamiento, lo que constituye una medida mucho más exigente y realista de rendimiento.
-
-Las particiones están predefinidas y publicadas con el dataset, lo que garantiza la reproductibilidad de los experimentos y permite la comparación directa de distintos modelos.
+Respecto a las particiones, estas están predefinidas y publicadas con el dataset, lo que garantiza la reproductibilidad de los experimentos y permite la comparación directa de distintos modelos.
 Esto es fundamental en un campo como AMT, en el que pequeñas diferencias en la partición de datos pueden producir variaciones significativas en los resultados reportados.
 En la Tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales por partición.
 
 % ============================================================
 % TABLA Estadísticas por partición MAESTRO
 % ============================================================
-\begin{table}[h]
+\begin{table}[H]
   \centering
   \begin{tabular}{lrrrr}
     \hline
@@ -338,9 +358,18 @@ En la Tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales po
   \label{tab:maestro_stats}
 \end{table}
 
+La política de particionado distingue el dataset de otras colecciones de audio-MIDI. El criterio establecido
+por los autores es el siguiente: una misma composición no puede aparecer simultáneamente en más de una partición, aunque haya sido interpretada por distintos pianistas
+en periodos diferentes~\cite{magenta2020maestrov3}.
+
+Esta decisión de diseño es crucial para garantizar la validez de los experimentos. Si múltiples interpretaciones de una misma obra aparecieran en entrenamiento y test,
+un modelo podría aprender características tímbricas o estructurales específicas de esa obra y obtener resultados artificialmente buenos en la evaluación sin haber generalizado
+correctamente. De esta forma, los modelos se evalúan sobre obras no vistas en entrenamiento, lo que constituye una medida mucho más exigente y realista de rendimiento.
+
 
 
 \section{Evolución del dataset}
+\label{sec:maestro_evolucion}
 MAESTRO ya va por su tercera versión desde su publicación original en 2018. En la Tabla~\ref{tab:maestro_versions} podemos ver características y principales cambios de cada versión.
 % ============================================================
 % TABLA Evolución entre versiones
@@ -374,6 +403,7 @@ al entrenamiento de modelos especializados en piano solo. Esta corrección hace 
 de este trabajo se realizan íntegramente sobre V3.0.0 para garantizar la comparabilidad con los resultados publicados más recientes.
 
 \section{Distribución y licencia}
+\label{sec:maestro_distribucion}
 MAESTRO se distribuye a través de Google Magenta en tres modalidades de descarga:
 \begin{itemize}
 \item  \textbf{Audio + MIDI} ($120{,}2$ GB sin comprimir): contiene los archivos WAV y MIDI completos, junto con los metadatos en formato CSV y JSON.
@@ -391,6 +421,7 @@ El dataset se distribuye bajo licencia \foreign{english}{Creative Commons Attrib
 Esta licencia es compatible con el uso académico en el contexto de un Trabajo de Fin de Grado.
 
 \section{Limitaciones}
+\label{sec:maestro_limitaciones}
 
 A pesar de sus fortalezas, MAESTRO presenta una serie de limitaciones que debemos tener en cuenta al interpretar los resultados de los sistemas entrenados sobre él.
 
@@ -401,10 +432,11 @@ bien a géneros como el jazz, el pop o la música contemporánea con técnicas e
 modelos entrenados con MAESTRO muestran una degradación significativa de rendimiento cuando se evalúan sobre grabaciones de pianos distintos en entornos con reverberación variable.
 Esto es especialmente relevante para aplicaciones del mundo real, donde el instrumento y la acústica son variables.
 
-\textbf{Ausencia de anotación de partitura.} MAESTRO proporciona MIDI, pero no partitura en formato estándar como MusicXML o MEI. Para tareas de transcripción audio-a-partitura
+\textbf{Ausencia de anotación de partitura.} MAESTRO proporciona MIDI, pero no partitura en formato estándar como MusicXML o MEI~\cite{magenta2020maestrov3}. Para tareas de transcripción audio-a-partitura
 (\foreign{english}{Audio-to-Score}), como parte del flujo de las tareas de AMT, es necesario complementar MAESTRO con datasets que incluyan partituras anotadas, como ASAP (\foreign{english}{Aligned Scores and Performances}).
 
 \section{Relevancia para este trabajo}
+\label{sec:maestro_relevancia}
 MAESTRO V3.0.0 es el dataset principal empleado para el entrenamiento y evaluación de los modelos de transcripción automática de piano desarrollados en este trabajo.
 
 Los modelos de referencia del estado del arte, incluyendo los modelos empleados en este trabajo, reportan sus resultados sobre las particiones fijas de MAESTRO, lo que
@@ -499,7 +531,7 @@ La Tabla~\ref{tab:metricas_resumen} resume las condiciones de aceptación de cad
 \end{table}
 
 
-Todos los valores de las métricas se \textbf{promedian sobre el número de piezas} del conjunto de evaluación, en lugar de calcularse de forma global sobre todas las notas. Este criterio es adoptado de forma uniforme por todos los trabajos de referencia ~\cite{hawthorne2018onsetsframes, wang2025mftfilm,toyama2023transkun}.
+Todos los valores de las métricas se \textbf{promedian sobre el número de piezas} del conjunto de evaluación, en lugar de calcularse de forma global sobre todas las notas. Este criterio es adoptado de forma uniforme por todos los trabajos de referencia~\cite{hawthorne2018onsetsframes, wang2025mftfilm,toyama2023transkun}.
 
 Los valores de $F_1$ son los indicadores principales de rendimiento en la literatura de AMT, siendo la \textbf{\textit{Note Onset} $F_1$} la métrica más citada para comparar modelos, y la \textbf{\textit{Note w/ Offset \& Velocity} $F_1$} la
 más representativa de la calidad de la transcripción completa.
