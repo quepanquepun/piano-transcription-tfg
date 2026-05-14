@@ -567,15 +567,15 @@ aquí para la fusión de dependencias espectro-temporales en la señal del audio
 La arquitectura central del MFT-FiLM se basa en dos innovaciones fundamentales: 
 \begin{enumerate}
   \item \textbf{Módulo FT-FiLM:} un bloque que se encarga de extraer información espectral y temporal de forma jerárquica, usando convoluciones unidimensionales a lo largo del eje de frecuencia
-  y redes neuronales recurrentes (FG-LSTM) para capturar la dependencia temporal de los \foreign{english}{frames} de audio. A diferencia de otras arquitecturas, este módulo aplica una transformación
+  y redes neuronales recurrentes (FG-LSTM) para capturar la dependencia temporal de los \foreign{english}{frames} de audio~\cite{wang2025mftfilm}. A diferencia de otras arquitecturas, este módulo aplica una transformación
   afín condicionada para auto-modular las características.
-  \item \textbf{Módulo IFT-FiLM (Inter-Task FiLM):} permite la interacción de información cruzada entre las distintas tareas. Mediante el uso de operaciones de transformación a nivel de tiempo y frecuencia, el sistema modula dinámicamente las características de una rama (por ejemplo \foreign{english}{Frame offset}) utilizando como información condicional o auxiliar los parámetros generados por otras ramas (por ejemplo \foreign{english}{Frame onset})
+  \item \textbf{Módulo IFT-FiLM (Inter-Task FiLM):} permite la interacción de información cruzada entre las distintas tareas. Mediante el uso de operaciones de transformación a nivel de tiempo y frecuencia, el sistema modula dinámicamente las características de una rama (por ejemplo \foreign{english}{Frame offset}) utilizando como información condicional o auxiliar los parámetros generados por otras ramas (por ejemplo \foreign{english}{Frame onset})~\cite{wang2025mftfilm}.
 \end{enumerate}
 
 La implementación de este modelo resulta especialmente atractiva para la extracción de \foreign{english}{Performance} MIDI debido a su alta eficiencia computacional. A pesar de lograr métricas SOTA, el modelo MFT-FiLM requiere un volumen de parámetros 
 muy pequeño (aproximadamente $1{,}2$ millones), reduciendo la complejidad computacional y costes de entrenamiento sin sacrificar precisión acústica.
 
-En este capítulo, la Sección~\ref{sec:mft_arch} describe la arquitectura del sistema, desde la representación tiempo--frecuencia de entrada hasta la organización de las ramas multitarea y los módulos FiLM. La Sección~\ref{sec:mft_loss_eff} detalla la función de pérdida conjunta empleada y analiza la eficiencia computacional del modelo en términos de número de parámetros y complejidad de cómputo. A continuación, la Sección~\ref{sec:mft_config} expone el entorno de cómputo y la configuración experimental utilizada para el entrenamiento sobre MAESTRO. En la Sección~\ref{sec:mft_preprocess} se describe el preprocesamiento del \textit{dataset}, la generación de la caché y el desarrollo práctico del proceso de entrenamiento en el clúster. Finalmente, la Sección~\ref{sec:mft_resultados} presenta los resultados obtenidos y se discute el rendimiento del modelo frente a trabajos previos del estado del arte.
+En este capítulo, la Sección~\ref{sec:mft_arch} describe la arquitectura del sistema, desde la representación tiempo--frecuencia de entrada hasta la organización de las ramas multitarea y los módulos FiLM. La Sección~\ref{sec:mft_loss_eff} detalla la función de pérdida conjunta empleada y analiza la eficiencia computacional del modelo en términos de número de parámetros y complejidad de cómputo. A continuación, la Sección~\ref{sec:mft_config} expone el entorno de cómputo y la configuración experimental utilizada para el entrenamiento sobre MAESTRO. En la Sección~\ref{sec:mft_preprocess} se describe el preprocesamiento del \textit{dataset}, la generación de la caché y el desarrollo práctico del proceso de entrenamiento en el clúster. Finalmente, en la Sección~\ref{sec:mft_resultados} se presentan los resultados obtenidos y se discute el rendimiento del modelo frente a trabajos previos del estado del arte.
 
 \section{Arquitectura del modelo}
 \label{sec:mft_arch}
@@ -613,7 +613,7 @@ La CQT presenta los siguientes parámetros de configuración:
 \begin{itemize}
   \item Frecuencia mínima de $27{,}5~\mathrm{Hz}$ correspondiente a la tecla A0 (la tecla más grave de un piano estándar).
   \item 48 \foreign{english}{bins} por octava, con un total de 352.
-  \item Ventana de Hanning y salto de trama (\foreign{english}{hop length}) de $20~\mathrm{ms}$.
+  \item Ventana de \textit{Hanning} y salto de trama (\foreign{english}{hop length}) de $20~\mathrm{ms}$.
 \end{itemize}
 
 El espectrograma CQT de dimensiones $(T \times 352)$, donde $T$ es el número de \foreign{english}{frames}, se remodela a $(C_0, T, F)$ con $C_0 = 4$ y $F = 88$. De esta forma, los 352 \foreign{english}{bins}
@@ -670,7 +670,7 @@ Con el objetivo de permitir la interacción entre ramas de distintas tareas, se 
 reside en el paso de transformación de canales: los tensores $z$ y $z'$ generados por la rama auxiliar se concatenan a los de la rama principal a lo largo del eje de canales antes de reducirlos
 de vuelta a $C$ mediante una convolución 1D con kernel de tamaño~1.
 
-Un detalle de implementación relevante es que los tensores auxiliares se \textbf{desconectan del grafo de cómputo} (\texttt{detach}) antes de ser incorporados. Esta operación impide que el gradiente fluya de vuelta hacia la rama auxiliar a través de esta conexión,
+Un detalle de implementación relevante es que los tensores auxiliares se \textbf{desconectan del grafo de cómputo} (\texttt{detach}) antes de ser incorporados~\cite{wang2025mftfilm}. Esta operación impide que el gradiente fluya de vuelta hacia la rama auxiliar a través de esta conexión,
 de forma que evitamos inestabilidades en la optimización cuando dos ramas se condicionan mutuamente. El módulo IFT-FiLM puede interpretarse como una red neuronal dinámica: los parámetros de modulación no son fijos,
 sino que se generan en cada paso en función de las entradas de ambas ramas, permitiendo que la red adapte su comportamiento de acuerdo con el contexto conjunto de las tareas involucradas.
 
@@ -682,7 +682,7 @@ y \foreign{english}{frame+offset}. Cada rama apila cuatro bloques FT-FiLM o IFT-
   \item De esta forma, el diseño produce \textbf{cuatro niveles de interacción cruzada}, desde representaciones de bajo nivel espectral hasta semánticas de alto nivel, enriqueciendo progresivamente las representaciones de cada subtarea.
 \end{itemize}
 
-El flujo unidireccional de información (onset $\rightarrow$ velocity, onset $\rightarrow$ frame) está justificado por el hecho de que la señal de \foreign{english}{frame} combina información de notas sostenidas y de finales, lo que podría interferir de forma negativa en la detección precisa de inicios si se utilizara como entrada de la rama \foreign{english}{onset}.
+El flujo unidireccional de información (onset $\rightarrow$ velocity, onset $\rightarrow$ frame) está justificado por el hecho de que la señal de \foreign{english}{frame} combina información de notas sostenidas y de finales, lo que podría interferir de forma negativa en la detección precisa de inicios si se utilizara como entrada de la rama \foreign{english}{onset}~\cite{wang2025mftfilm}.
 Las dimensiones de los canales son $C = 64$ en las ramas \foreign{english}{onset} y \foreign{english}{velocity}, y $C = 32$ en la rama \foreign{english}{frame+offset}, lo que fomenta la minimización de los parámetros del modelo.
 
 Cada rama dispone de una capa de salida que ajusta el número de canales al objetivo de la subtarea correspondiente. La capa sigue el esquema: expansión a $2C$ canales,
@@ -704,7 +704,7 @@ La Tabla~\ref{tab:salidas} resume las configuraciones de salida de cada rama.
   \end{tabular}
 \end{table}
 
-A modo de esquema resumen, en la Figura~\ref{fig:mftfilm_overview} podemos ver un diagrama que representa la arquitectura del modelo MFT-FiLM, con todos los componentes previamente mencionados. Este además muestra el flujo de la información desde la entrada a la salida del modelo, y la interacción que existe entre las distintas ramas.
+A modo de esquema general, en la Figura~\ref{fig:mftfilm_overview} podemos ver un diagrama que representa la arquitectura del modelo MFT-FiLM, con todos los componentes previamente mencionados. Este además muestra el flujo de la información desde la entrada a la salida del modelo, y la interacción que existe entre las distintas ramas.
 
 \begin{figure}[H]
   \centering
@@ -763,7 +763,7 @@ El entrenamiento del modelo MFT-FiLM se llevó a cabo en el clúster de cómputo
 equipado con \textbf{$503\,GB$ de memoria RAM} y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S} con $48\,GB$ de memoria GDDR6 ECC cada una. Las GPUs L40S son tarjetas de la familia \foreign{english}{Ada Lovelace}, orientadas específicamente a cargas de trabajo de inteligencia artificial sostenidas en entornos de servidor.
 A diferencia de las tarjetas de consumo de la misma generación, estas incorporan memoria ECC (\textit{Error-Correcting Code}), que detecta y corrige errores de bit durante el cómputo, algo que resulta realmente útil en trabajos de larga duración como el entrenamiento de redes neuronales.
 
-El hardware empleado en el artículo original consistía en dos tarjetas NVIDIA GeForce RTX 4090 de $24\,GB$ de VRAM cada una. La L40S cuenta individualmente con $48\,GB$, lo que permitió alojar el modelo con lotes de tamaño deseado sin problemas.
+El hardware empleado en el artículo original consistía en dos tarjetas NVIDIA GeForce RTX 4090 de $24\,GB$ de VRAM cada una~\cite{wang2025mftfilm}. La L40S cuenta individualmente con $48\,GB$, lo que permitió alojar el modelo con lotes de tamaño deseado sin problemas.
 
 El acceso se realiza mediante SSH a través del nodo de entrada \texttt{tensor.dsic.upv.es}, autenticado con credenciales institucionales. El sistema de gestión de trabajos es \textbf{SLURM} (\textit{Simple Linux Utility for Resource Management}), que organiza la ejecución de trabajos mediante
 dos colas principales: \texttt{docencia}, para trabajos de duración inferior a 24 horas; y \texttt{long}, para trabajos de hasta 72 horas. Dada una duración de entrenamiento estimada por los autores de 43 horas, fue necesario usar la cola \texttt{long}.
@@ -793,7 +793,7 @@ pip install prettymidi mireval librosa==0.9.2 \
 \end{verbatim}
 \end{enumerate}
 
-Después de preparar el entorno, se clonó el repositorio oficial público desde el GitHub oficial~\cite{wang2025mftfilm}, y se creó un enlace simbólico para trabajar con MAESTRO previamente descargado.
+Después de preparar el entorno, se clonó el repositorio público desde el GitHub oficial~\cite{wang2025mftfilm}, y se creó un enlace simbólico para trabajar con MAESTRO previamente descargado.
 Durante la realización de pruebas para comprobar el funcionamiento del código original encontramos ciertas dificultades. En los siguientes apartados veremos en detalle los problemas técnicos más relevantes y las soluciones adoptadas para resolverlos.
 
 \paragraph{Problema 1: Obsolescencia de dependencias.}
@@ -862,7 +862,7 @@ inicialización, delegando la responsabilidad de la gestión dimensional a los m
 por los autores. Por otro lado, se eliminó completamente el árbol de directorios de caché corrupta y se regeneraron los archivos desde cero.
 
 
-Tras solucionar todos los problemas e incompatibilidades, se procedió con la configuración de parámetros. El archivo central de configuración es \texttt{constant\_macro.py}, que controla todos los hiperparámetros y rutas del sistema. Para replicar las condiciones descritas en el artículo original, se ajustaron los parámetros que se muestran en la Tabla~\ref{tab:config}.
+Tras solucionar todos los problemas e incompatibilidades, se procedió con la configuración de parámetros. El archivo central de configuración es \texttt{constant\_macro.py}, que controla todos los hiperparámetros y rutas del sistema. Para replicar las condiciones descritas en el artículo original, se ajustaron los parámetros que se muestran en la Tabla~\ref{tab:config}~\cite{wang2025mftfilm}.
 
 \begin{table}[h]
   \centering
@@ -1172,7 +1172,7 @@ por encima del $85\%$ hacia la culminación del entrenamiento.
 Para analizar rigurosamente la naturaleza de las predicciones del modelo, 
 resulta necesario descomponer esta métrica armónica en sus constituyentes 
 básicos. La Figura~\ref{fig:prec_rec_comparison} presenta en paralelo los niveles 
-de precisión y (\textit{recall}) obtenidos durante la fase de 
+de precisión y \textit{recall} obtenidos durante la fase de 
 validación.
 \begin{figure}[H]
     \centering
