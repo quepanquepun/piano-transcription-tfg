@@ -866,8 +866,7 @@ Tras solucionar todos los problemas e incompatibilidades, se procedió con la co
 
 \begin{table}[h]
   \centering
-  \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py} para la
-  replicación del entrenamiento sobre MAESTRO v3.0.0.}
+  \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py} para el entrenamiento de MFT-FILM.}
   \label{tab:config}
   \begin{tabular}{lll}
     \hline
@@ -998,7 +997,8 @@ Las Tablas~\ref{tab:mft_maestro_v3},~\ref{tab:mft_maestro_prec} y~\ref{tab:mft_m
 sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{recall}, respectivamente. Se compara el modelo entrenado con otros modelos SOTA.
 \begin{table}[H]
   \centering
-  \caption{Resultados de transcripción de notas sobre MAESTRO v3.0.0. 
+  \caption[Resultados del $F_1$ de MFT-FiLM sobre MAESTRO v3.0.0]{%
+  Resultados de transcripción de notas sobre MAESTRO v3.0.0. 
   Se muestran el número de parámetros y las puntuaciones $F_1$ a nivel de trama 
   (\textit{Frame}) y de nota (\textit{Note Onset}, \textit{Note w/ Offset}, 
   \textit{Note w/ Offset \& Velocity}). Todas las métricas se expresan en porcentaje (\%).}
@@ -1028,7 +1028,8 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
 
 \begin{table}[H]
   \centering
-  \caption{Resultados de precisión de transcripción de notas sobre MAESTRO v3.0.0.
+  \caption[Resultados de la precisión de MFT-FiLM sobre MAESTRO v3.0.0]{%
+  Resultados de precisión de transcripción de notas sobre MAESTRO v3.0.0.
   Se muestran el número de parámetros y las métricas de precisión a nivel de trama
   (\textit{Frame}) y de nota (\textit{Note Onset}, \textit{Note w/ Offset},
   \textit{Note w/ Offset \& Velocity}). Todas las métricas se expresan en porcentaje (\%).}
@@ -1058,7 +1059,8 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
 
 \begin{table}[H]
   \centering
-  \caption{Resultados de \textit{recall} de transcripción de notas sobre MAESTRO v3.0.0.
+  \caption[Resultados del \textit{recall} de MFT-FiLM sobre MAESTRO v3.0.0]{%
+  Resultados del \textit{recall} en transcripción de notas sobre MAESTRO v3.0.0.
   Se muestran el número de parámetros y las métricas de \textit{recall} a nivel de trama
   (\textit{Frame}) y de nota (\textit{Note Onset}, \textit{Note w/ Offset},
   \textit{Note w/ Offset \& Velocity}). Todas las métricas se expresan en porcentaje (\%).}
@@ -1128,7 +1130,8 @@ de la totalidad del entrenamiento.
         \caption{Pérdida global (30 épocas)}
         \label{fig:loss_all}
     \end{subfigure}
-    \caption{Evolución de la pérdida (\textit{loss}) del modelo MFT-FiLM. 
+    \caption[Evolución de la pérdida (\textit{loss}) del modelo MFT-FiLM]{%
+    Evolución de la pérdida (\textit{loss}) del modelo MFT-FiLM. 
     Izquierda: rápida convergencia durante las iteraciones iniciales. 
     Derecha: pérdida de entrenamiento promedio frente a la pérdida global de 
     validación (calculada como la suma de los errores de las cuatro subtareas).}
@@ -1163,7 +1166,8 @@ por encima del $85\%$ hacia la culminación del entrenamiento.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{figuras/f1_validacion_por_epoca_sci.png}
-    \caption{Evolución de la métrica $F_1$ en el conjunto de validación para 
+    \caption[Evolución de la métrica $F_1$ en el conjunto de validación]{%
+    Evolución de la métrica $F_1$ en el conjunto de validación para 
     la estimación de \textit{Frame}, \textit{Onset}, \textit{Offset} y 
     \textit{Velocity} durante las 30 épocas de entrenamiento.}
     \label{fig:f1_evolution}
@@ -1186,12 +1190,13 @@ validación.
     \begin{subfigure}[b]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figuras/recall_validacion_por_epoca_sci.png}
-        \caption{(\textit{Recall}) en validación}
+        \caption{\textit{Recall} en validación}
         \label{fig:rec_val}
     \end{subfigure}
-    \caption{Comparativa entre los niveles de precisión (izquierda) y 
-    \textit{recall} (derecha) en el conjunto de validación. Destaca la 
-    sistemática superioridad de la precisión frente al \textit{recall} .}
+    \caption[Comparativa entre los niveles de precisión y 
+    \textit{recall} en el conjunto de validación] {% 
+    Comparativa entre los niveles de precisión y 
+    \textit{recall} en el conjunto de validación. Destaca la sistemática superioridad de la precisión frente al \textit{recall} .}
     \label{fig:prec_rec_comparison}
 \end{figure}
 
