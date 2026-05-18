@@ -271,7 +271,7 @@ durante el entrenamiento y degrada el rendimiento de los modelos.
 
 En primer lugar, el audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
 PCM\footnote{PCM (\foreign{english}{Pulse Code Modulation}) es una técnica de representación digital de señales analógicas basada en el muestreo y la cuantización, ampliamente utilizada en sistemas de audio sin compresión.} estéreo.
-Esta calidad es suficiente para representar con fidelidad toda la gama de frecuencias audibles relevantes para el piano (aproximadamente $28~\mathrm{Hz}$ a $4~\mathrm{kHz}$ para los fundamentales,
+Esta calidad es suficiente para representar con fidelidad toda la gama de frecuencias audibles relevantes para el piano (entre $28~\mathrm{Hz}$ y $4~\mathrm{kHz}$ aproximadamente para los fundamentales,
 con armónicos que se extienden hasta 16-$20~\mathrm{kHz}$). Las grabaciones se almacenan sin compresión con pérdida, lo que preserva toda la información espectral original.
 
 
@@ -341,7 +341,7 @@ El repertorio incluye obras de 60 compositores distintos que se asocian principa
 La Tabla~\ref{tab:maestro_compositores} muestra la distribución típica de competiciones internacionales de piano, que tienden a centrarse en el período Romántico y en los 
 grandes compositores del clasicismo tardío.
 
-Respecto a las particiones, estas están predefinidas y publicadas con el \textit{dataset}, lo que garantiza la reproductibilidad de los experimentos y permite la comparación directa de distintos modelos.
+Respecto a las particiones, estas están predefinidas y publicadas con el \textit{dataset}, lo que garantiza la reproducibilidad de los experimentos y permite la comparación directa de distintos modelos.
 Esto es fundamental en un campo como AMT, en el que pequeñas diferencias en la partición de datos pueden producir variaciones significativas en los resultados reportados.
 En la Tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales por partición.
 
@@ -394,11 +394,11 @@ MAESTRO ya va por su tercera versión desde su publicación original en 2018. En
         \textbf{Horas} & \textbf{Notas (M)} & \textbf{Principal novedad} \\
         \hline
         V1.0.0 & 2018 & $1.184$ & $172{,}3$ & $6{,}18$ &
-          Publicación original; datos 2004--2016. \\
+          Publicación original~\cite{magenta2020maestrov3}; datos 2004--2016. \\
         V2.0.0 & 2019 & $1.282$ & $201{,}2$ & $7{,}13$ &
-          Añade edición 2018; incorpora pedales \textit{sostenuto} y \textit{una corda}. \\
+          Añade edición 2018~\cite{magenta2020maestrov3}; incorpora pedales \textit{sostenuto} y \textit{una corda}. \\
        V3.0.0 & 2020 & $1.276$ & $198{,}7$ & $7{,}04$ &
-          Elimina 6 grabaciones con acompañamiento orquestal. \\
+          Elimina 6 grabaciones con acompañamiento orquestal~\cite{magenta2020maestrov3}. \\
         \hline
       \end{tabular}
     }
@@ -410,11 +410,11 @@ MAESTRO ya va por su tercera versión desde su publicación original en 2018. En
 La transición de V2.0.0 a V3.0.0 merece especial atención. Contrariamente a lo que podría esperarse, la versión más reciente no amplía el \textit{dataset}, sino que realiza una corrección de 
 calidad eliminando 6 grabaciones que no eran de piano solo. La presencia de estas grabaciones en versiones anteriores constituía una inconsistencia que podía afectar negativamente
 al entrenamiento de modelos especializados en piano solo. Esta corrección hace que las particiones de V3.0.0 no sean compatibles con las de V2.0.0, por lo que todos los experimentos
-de este trabajo se realizan íntegramente sobre V3.0.0 para garantizar la comparabilidad con los resultados publicados más recientes.
+de este trabajo se realizan íntegramente sobre V3.0.0 para garantizar la comparabilidad con los resultados publicados recientemente.
 
 \section{Distribución y licencia}
 \label{sec:maestro_distribucion}
-MAESTRO se distribuye a través de Google Magenta en tres modalidades de descarga:
+MAESTRO se distribuye a través de Google Magenta en tres modalidades de descarga~\cite{magenta2020maestrov3}:
 \begin{itemize}
 \item  \textbf{Audio + MIDI} ($120{,}2$ GB sin comprimir): contiene los archivos WAV y MIDI completos, junto con los metadatos en formato CSV y JSON.
 \item \textbf{Solo MIDI} ($\sim57~\mathrm{MB}$): para tareas que no necesiten el audio.
@@ -456,7 +456,7 @@ Su volumen de casi 200 horas con más de \textbf{7 millones de eventos MIDI} pro
 sin riesgo de sobreajuste, siempre y cuando se apliquen las técnicas de regularización adecuadas. Todos estos eventos tienen una precisión de alineación de $\pm 3~\mathrm{ms}$, garantizando la calidad de
 las etiquetas \foreign{english}{onset, offset}  y velocidad, que son las variables objetivo de los modelos de transcripción empleados.
 
-Finalmente, las particiones fijas y predefinidas garantizan la reproductibilidad de los experimentos.
+Finalmente, las particiones fijas y predefinidas garantizan la reproducibilidad de los experimentos.
 
 \section{Evaluación estándar}
 \label{sec:metricas}
@@ -551,12 +551,12 @@ más representativa de la calidad de la transcripción completa.
 
 \section{Introducción}
 
-La transcripción de música de piano polifónico mediante redes neuronales se aborda contemporáneamente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL).
+La transcripción de música de piano polifónico mediante redes neuronales se aborda contemporáneamente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes}.
 En lugar de predecir la representación MIDI en un único paso, el sistema descompone la transcripción en varios objetivos interrelacionados: estimación del tono a nivel de frame (\foreign{english}{frame-wise pitch}),
 la detección del inicio de la nota (\foreign{english}{onset}), la detección del final (\foreign{english}{offset}), y la estimación de la intensidad o velocidad (\foreign{english}{velocity}). Dada la fuerte correlación
 entre estos eventos, el rendimiento general del sistema mejora significativamente al intercambiar información entre las diferentes tareas.
 
-Sin embargo, las arquitecturas multitarea clásicas presentan limitaciones estructurales. Estrategias como la compartición estricta de parámetros (\foreign{english}{hard parameter sharing}) pueden sufrir transferencias
+Sin embargo, las arquitecturas multitarea clásicas presentan limitaciones estructurales~\cite{wang2025mftfilm}. Estrategias como la compartición estricta de parámetros (\foreign{english}{hard parameter sharing}) pueden sufrir transferencias
 negativas debido a conflictos o discrepancias entre los resultados de distintas tareas. Por otro lado, la concatenación o adición directa de las características carece de los pesos
 adecuados para fusionar dinámicamente las representaciones extraídas por cada rama de la red.
 
@@ -621,7 +621,18 @@ se distribuyen en cuatro grupos de 88 frecuencias, en correspondencia biunívoca
 del piano~\cite{wang2025mftfilm}. Esta representación constituye la entrada de la capa lineal
 inicial del modelo, que se somete a una serie de módulos FiLM que veremos a continuación.
 
+A modo de esquema general, en la Figura~\ref{fig:mftfilm_overview} se presenta un diagrama de la arquitectura del modelo MFT-FiLM que servirá de guía para los diguientes apartados. Este muestra el flujo de la información desde la entrada a la salida y la interacción que existe entre las tres ramas principales.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figuras/scheme_mft.png}
+  \caption[Esquema general del modelo MFT-FiLM]%
+  {Esquema general del modelo MFT-FiLM para la transcripción multitarea de notas de piano, 
+  con las tres ramas de \foreign{english}{onset}, \foreign{english}{velocity} y 
+  \foreign{english}{frame+offset}, y el flujo de información a través de los bloques 
+  FT-FiLM e IFT-FiLM. Ilustración adaptada de~\cite{wang2025mftfilm}.}
+  \label{fig:mftfilm_overview}
+\end{figure}
 
 El mecanismo \foreign{english}{Feature-Wise Linear Modulation} (FiLM) fue propuesto inicialmente por Perez \textit{et al.}~(2018)~\cite{perez2018film} para tareas de razonamiento visual. La idea central
 consiste en condicionar las activaciones de una red neuronal mediante una transformación afín por cada elemento, usando información de contexto generada por un módulo externo denominado
@@ -637,7 +648,7 @@ de Hadamard (multiplicación elemento a elemento). El principal beneficio de est
 se adaptan en función del contexto en cada paso de inferencia, permitiendo al modelo ponderar y suprimir canales de forma dinámica en lugar de aplicar pesos fijos.
 
 
-El módulo \textbf{FT-FiLM} (\foreign{english}{Frequency-Time FiLM}) adapta el mecanismo descrito en la ecuación~(\ref{eq:film}) para extraer dependencias espectrales y temporales
+El módulo \textbf{FT-FiLM} (\foreign{english}{Frequency-Time FiLM}), implementado en la rama central (Figura~\ref{fig:mftfilm_overview}),  adapta el mecanismo descrito en la ecuación~(\ref{eq:film}) para extraer dependencias espectrales y temporales
 de forma jerárquica a partir del espectrograma CQT. Su operación se define como:
 
 \begin{equation}
@@ -645,7 +656,7 @@ de forma jerárquica a partir del espectrograma CQT. Su operación se define com
   \label{eq:ftfilm}
 \end{equation}
 
-donde $f_{FT}$ y $h_{FT}$ son generadores de los parámetros de modulación $\gamma$ y $\beta$ respectivamente, extrayendo la información espectro-temporal en tres etapas secuenciales:
+\noindent donde $f_{FT}$ y $h_{FT}$ son generadores de los parámetros de modulación $\gamma$ y $\beta$ respectivamente, extrayendo la información espectro-temporal en tres etapas secuenciales:
 
 \paragraph{Convolución en el eje de frecuencia.}
 El mapa de características de entrada, de dimensiones $(C, T, F)$, se convoluciona con un kernel 1D de tamaño $2F - 1  = 175$ sobre el eje de frecuencia. Este kernel se diseña con una longitud igual al eje completo para capturar
@@ -704,18 +715,6 @@ La Tabla~\ref{tab:salidas} resume las configuraciones de salida de cada rama.
   \end{tabular}
 \end{table}
 
-A modo de esquema general, en la Figura~\ref{fig:mftfilm_overview} podemos ver un diagrama que representa la arquitectura del modelo MFT-FiLM, con todos los componentes previamente mencionados. Este además muestra el flujo de la información desde la entrada a la salida del modelo, y la interacción que existe entre las distintas ramas.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\linewidth]{figuras/scheme_mft.png}
-  \caption[Esquema general del modelo MFT-FiLM]%
-  {Esquema general del modelo MFT-FiLM para la transcripción multitarea de notas de piano, 
-  con las tres ramas de \foreign{english}{onset}, \foreign{english}{velocity} y 
-  \foreign{english}{frame+offset}, y el flujo de información a través de los bloques 
-  FT-FiLM e IFT-FiLM. Ilustración adaptada de~\cite{wang2025mftfilm}.}
-  \label{fig:mftfilm_overview}
-\end{figure}
 
 Por último, cabe mencionar que durante la inferencia se aplica una estrategia de \textbf{medio paso} (\foreign{english}{half stride}), que procesa el audio en ventanas con un solapamiento del $50~\%$ para mitigar los artefactos en los bordes de cada bloque.
 El algoritmo de decodificación heurístico convierte los piano rolls de probabilidad en eventos de nota discretos (tono, inicio, final, velocidad), con una tolerancia de $50~ms$ en los inicios; y del máximo entre $50~ms$ y el  $20~\%$ de la duración en los finales.
@@ -769,7 +768,7 @@ El acceso se realiza mediante SSH a través del nodo de entrada \texttt{tensor.d
 dos colas principales: \texttt{docencia}, para trabajos de duración inferior a 24 horas; y \texttt{long}, para trabajos de hasta 72 horas. Dada una duración de entrenamiento estimada por los autores de 43 horas, fue necesario usar la cola \texttt{long}.
 
 
-Todas las dependencias se encapsularon en un entorno virtual de Python para garantizar la reproductibilidad del experimento y para aislar las versiones de las librerías del sistema global del clúster. El uso de entornos virtuales es una práctica estándar en proyectos de aprendizaje automático, ya que distintos proyectos pueden requerir versiones incompatibles de las mismas librerías.
+Todas las dependencias se encapsularon en un entorno virtual de Python para garantizar la reproducibilidad del experimento y para aislar las versiones de las librerías del sistema global del clúster. El uso de entornos virtuales es una práctica estándar en proyectos de aprendizaje automático, ya que distintos proyectos pueden requerir versiones incompatibles de las mismas librerías.
 El proceso de creación fue el siguiente:
 \begin{enumerate}
   \item Creación del entorno virtual con el intérprete Python 3.12 disponible en el clúster:
@@ -797,7 +796,7 @@ Después de preparar el entorno, se clonó el repositorio público desde el GitH
 Durante la realización de pruebas para comprobar el funcionamiento del código original encontramos ciertas dificultades. En los siguientes apartados veremos en detalle los problemas técnicos más relevantes y las soluciones adoptadas para resolverlos.
 
 \paragraph{Problema 1: Obsolescencia de dependencias.}
-La reproductibilidad en aprendizaje automático aplicado a la recuperación de información musical es altamente sensible a las versiones de las librerías de procesamiento de señal. Para garantizar que las matrices de los espectrogramas CQT generados coincidieran
+La reproducibilidad en aprendizaje automático aplicado a la recuperación de información musical es altamente sensible a las versiones de las librerías de procesamiento de señal. Para garantizar que las matrices de los espectrogramas CQT generados coincidieran
 con las reportadas en el artículo original, fue estrictamente necesario usar la versión \textbf{0.9.2} de la librería \texttt{librosa}. Las versiones más recientes (a partir de la 0.10) introdujeron modificaciones en el cómputo del \textit{padding} interno del CQT, lo que produce una diferencia de uno o dos \textit{frames} entre el tensor del audio y el tensor de etiquetas MIDI generado a partir del mismo archivo.
 Dado que el código asume una correspondencia exacta entre ambas dimensiones temporales, este desajuste provocaba un error fatal durante la inicialización del \textit{DataLoader}.
 
