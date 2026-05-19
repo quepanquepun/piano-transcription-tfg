@@ -46,7 +46,10 @@
 \usepackage{emptypage}
 \usepackage{float}
 \usepackage{subcaption}
-
+\usepackage{adjustbox}
+\usepackage{amsthm}
+\newtheorem*{lemma*}{Lema}
+\newtheorem*{theorem*}{Teorema}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                        DADES DEL TREBALL                                    %
@@ -551,7 +554,7 @@ más representativa de la calidad de la transcripción completa.
 
 \section{Introducción}
 
-La transcripción de música de piano polifónico mediante redes neuronales se aborda contemporáneamente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes}.
+La transcripción de música de piano polifónico mediante redes neuronales se aborda principalmente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes}.
 En lugar de predecir la representación MIDI en un único paso, el sistema descompone la transcripción en varios objetivos interrelacionados: estimación del tono a nivel de frame (\foreign{english}{frame-wise pitch}),
 la detección del inicio de la nota (\foreign{english}{onset}), la detección del final (\foreign{english}{offset}), y la estimación de la intensidad o velocidad (\foreign{english}{velocity}). Dada la fuerte correlación
 entre estos eventos, el rendimiento general del sistema mejora significativamente al intercambiar información entre las diferentes tareas.
@@ -1231,11 +1234,596 @@ así la preservación de la coherencia tonal y rítmica de la obra.
 
 \chapter{Transkun}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+\section{Introducción}
 
-\section{?? ???? ???? ? ?? ??}
+La transcripción automática de música de piano puede abordarse desde múltiples perspectivas
+metodológicas. El enfoque más extendido en la literatura consiste en trabajar a nivel de
+\foreign{english}{frame}: el sistema produce, para cada instante de la señal de audio, una
+estimación de la activación de cada tecla del piano, del inicio y del final de cada nota
+(\foreign{english}{onset} y \foreign{english}{offset}), así como de la velocidad de pulsación
+(\foreign{english}{velocity})~\cite{hawthorne2018onsetsframes,kong2021highres}. Estas
+estimaciones se obtienen de forma independiente para cada subtarea y, a continuación, se
+ensamblan mediante algoritmos heurísticos de postprocesado (umbralización, búsqueda de
+picos, modelos de Markov de bajo orden) para recuperar los eventos de nota como intervalos
+discretos~\cite{kwon2020polyphonic}. Esta estrategia de dos etapas presenta limitaciones
+estructurales de fondo: la calidad del resultado a nivel de nota queda fundamentalmente
+limitada por la calidad de las activaciones \foreign{english}{frame} a \foreign{english}{frame},
+que pueden ser discontinuas, irregulares en magnitud o contradictorias entre subtareas;
+y el postprocesado manual no forma parte del proceso de optimización, por lo que el sistema
+no puede aprender a corregir sus propios errores de ensamblado.
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+El modelo \textbf{MFT-FiLM}, estudiado en el capítulo anterior, responde a estas limitaciones
+desde la perspectiva del aprendizaje multitarea: mediante módulos de modulación lineal
+entre ramas (\foreign{english}{Inter-Task FiLM}), el sistema aprende a intercambiar
+información entre las subtareas de \foreign{english}{onset}, \foreign{english}{frame} y
+\foreign{english}{velocity} durante el propio proceso de estimación \foreign{english}{frame}
+a \foreign{english}{frame}~\cite{wang2025mftfilm}. Sin embargo, la representación final
+del resultado sigue siendo un conjunto de predicciones independientes por trama, que requiere
+un paso de decodificación posterior para construir los eventos de nota.
+
+El segundo modelo implementado en este trabajo, \textbf{Transkun}
+(\foreign{english}{Transcription Using Neural semi-CRFs}), propone una solución radicalmente
+diferente: eliminar por completo el nivel de \foreign{english}{frame} como objetivo de
+optimización, y sustituirlo por la predicción directa de intervalos de tiempo. La idea central
+consiste en tratar cada nota como un intervalo cerrado $[i, j]$ sobre el eje temporal,
+y asignar a cada candidato de intervalo una puntuación escalar que refleje su probabilidad
+de corresponder a un evento real del tipo de evento dado~\cite{yan2024transkun}.
+Esta reformulación del problema se apoya en el \textbf{campo aleatorio condicional
+semi-Markoviano} (\foreign{english}{neural semi-Markov Conditional Random Field},
+semi-CRF), un marco de predicción estructurada que permite modelar directamente
+conjuntos de intervalos no solapados y decodificarlos de forma óptima mediante programación
+dinámica~\cite{yan2021semicrf1}.
+
+La familia de modelos basada en semi-CRF para la transcripción de piano fue introducida
+por Yan, Cwitkowitz y Duan~\cite{yan2021semicrf1}, quienes demostraron que este enfoque
+podía superar los métodos \foreign{english}{frame-level} en métricas de nota holística
+(\textit{Note w/ Offset}, \textit{Note w/ Offset \& Velocity}), al tiempo que presentaba
+una complejidad de inferencia tratable. La arquitectura original empleaba un modelo
+contextual basado en bloques convolucionales y redes recurrentes GRU bidireccionales para
+extraer representaciones por trama, y un módulo MLP para puntuar cada candidato de
+intervalo a partir de los embeddings de sus extremos y de sus momentos estadísticos
+internos~\cite{yan2021semicrf1}.
+
+Transkun~\cite{yan2024transkun}, propuesto por Yan y Duan en ISMIR 2024, construye sobre
+esta base e introduce dos contribuciones fundamentales que simplifican y mejoran
+el marco original. En primer lugar, reemplaza el módulo de \foreign{english}{scoring} MLP por
+un \textbf{producto interior escalado} entre vectores de representación de inicio y fin del
+intervalo (una operación análoga al mecanismo de atención de los transformers), y
+demuestra teóricamente que, bajo una condición de rango moderada, esta operación es
+suficientemente expresiva para representar cualquier matriz de \foreign{english}{scoring}
+ideal~\cite{yan2024transkun}. En segundo lugar, aprovecha la analogía formal entre el
+producto interior propuesto y la atención \foreign{english}{transformer} para adoptar como
+\foreign{english}{backbone} un \textbf{transformer encoder no jerárquico} que opera sobre
+un mapa de características de baja resolución temporal, sin preservar la resolución de la
+entrada en todos los niveles como hacen los modelos SOTA anteriores. Este diseño, inspirado
+en la literatura de Vision Transformers~\cite{dosovitskiy2021vit}, reduce el coste
+computacional y mejora la escalabilidad del modelo sin sacrificar precisión en la localización
+de eventos~\cite{yan2024transkun}.
+
+El resultado es un sistema de un solo stage que produce, directamente a partir del espectrograma
+log-mel de entrada, un conjunto óptimo de intervalos no solapados para cada uno de los
+88 tipos de nota y los pedales del piano, sin necesidad de postprocesado heurístico.
+Con 12,9 millones de parámetros, Transkun establece el nuevo estado del arte en todas las
+subtareas de transcripción sobre el conjunto de test de MAESTRO v3 en términos de
+puntuación $F_1$ \textit{offset} y \textit{velocity}~\cite{yan2024transkun}.
+
+En este capítulo, la Sección~\ref{sec:transkun_arch} describe la arquitectura completa
+del sistema, desde el espectrograma de entrada hasta el transformer encoder y los
+\foreign{english}{event tracks}. La Sección~\ref{sec:transkun_scoring} presenta el marco
+semi-CRF y la formulación del scoring por producto interior escalado.
+La Sección~\ref{sec:transkun_attrs} detalla la predicción de atributos y el procesado por
+segmentos. A continuación, la Sección~\ref{sec:transkun_config} expone el entorno de cómputo
+y la configuración experimental del entrenamiento. En la Sección~\ref{sec:transkun_preprocess}
+se describe el preprocesamiento del \textit{dataset} y el desarrollo práctico del proceso
+de entrenamiento en el clúster. Finalmente, en la Sección~\ref{sec:transkun_resultados}
+se presentan y analizan los resultados obtenidos, comparando el rendimiento con el estado
+del arte y con el modelo MFT-FiLM estudiado en el capítulo anterior.
+
+\section{Arquitectura del modelo}
+\label{sec:transkun_arch}
+
+La arquitectura de Transkun está diseñada para producir, a partir del espectrograma de
+audio de entrada, un conjunto de representaciones vectoriales que permitan puntuar cada
+posible intervalo temporal mediante un simple producto interior. El sistema puede dividirse
+en cuatro etapas funcionales: la representación tiempo-frecuencia de la señal, el
+submuestreo y proyección a un mapa de características de baja resolución, el procesado
+contextual mediante un transformer encoder no jerárquico, y el remuestreo final para
+recuperar la resolución temporal original. En la Figura~\ref{fig:transkun_overview} se
+presenta el diagrama general del sistema.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figuras/scheme_trasnskun.png}
+  \caption[Esquema general del modelo Transkun]%
+  {Esquema general del sistema TranskUN. El espectrograma log-mel es
+  submuestreado mediante convoluciones \textit{strided} y enriquecido con embeddings
+  de posición espacial. Los \foreign{english}{event tracks} se concatenan a las
+  representaciones del espectrograma y se procesan conjuntamente por el transformer
+  encoder. Tras el remuestreo temporal, los \foreign{english}{event tracks} resultantes
+  se utilizan para el scoring por producto interior, que alimenta la capa semi-CRF.
+  Ilustración adaptada de~\cite{yan2024transkun}.}
+  \label{fig:transkun_overview}
+\end{figure}
+
+\subsection*{Representación de entrada: espectrograma log-mel sobruestreado}
+
+La señal de audio de entrada se muestrea a $44\,100~\mathrm{Hz}$ y se transforma en un
+espectrograma logarítmico mediante la Transformada de Fourier de Tiempo Corto (al igual que MFT-FiLM, Sección~\ref{sec:mft_arch}), con un
+tamaño de ventana de 4096 muestras, un salto de trama (\foreign{english}{hop size}) de
+1024 muestras y la ventana de Hanning. Se utilizan 229 bandas en el rango de
+30 a $8000~\mathrm{Hz}$~\cite{yan2024transkun}.
+
+Para mejorar la resolución temporal de la representación espectral, se aplica una
+estrategia de \textbf{sobruestreo de ventanas} (\foreign{english}{multi-window oversampling}),
+heredada del modelo semi-CRF original~\cite{yan2021semicrf1}: en lugar de utilizar una
+única ventana de Hanning por trama, se aplican cinco subventanas de Hanning ajustables
+(inicializadas con centros equidistantes y varianza constante) sobre cada trama de
+audio. Los espectros log-mel resultantes se concatenan a lo largo del eje de canales,
+produciendo una entrada de cinco canales espectrales por \textit{bin} tiempo-frecuencia. De este
+modo, la resolución efectiva del espectrograma en el eje temporal aumenta sin necesidad
+de reducir el salto de trama, lo que mantiene la eficiencia computacional del
+preprocesado. Cada segmento de audio procesado tiene una duración de 16 segundos~\cite{yan2024transkun}.
+
+\subsection*{Submuestreo y embeddings de posición espacial}
+
+A diferencia de los sistemas SOTA previos (incluyendo el propio semi-CRF original~\cite{yan2021semicrf1},
+hFT-Transformer~\cite{toyama2023hftt} y Onsets\,\&\,Frames~\cite{hawthorne2018onsetsframes}), que preservan la resolución temporal completa
+de la entrada a lo largo de toda la red, Transkun adopta un diseño de
+\textbf{mapa de características de baja resolución}, análogo al empleado en los
+Vision Transformers (ViT)~\cite{dosovitskiy2021vit}. Este enfoque, que en visión
+artificial ha demostrado ser eficaz incluso para tareas de predicción densa~\cite{li2022videt},
+permite reducir drásticamente el coste computacional del transformer sin sacrificar
+la capacidad expresiva del modelo, siempre que la dimensionalidad de los embeddings
+sea suficientemente alta.
+
+El espectrograma de entrada, de dimensiones $(T \times F)$, se submuestrea mediante
+\textbf{cuatro capas convolucionales \foreign{english}{strided}} con kernel de tamaño~3
+y canales de salida \linebreak $[128, 256, 256, 256]$ respectivamente. Los \foreign{english}{strides}
+aplicados son $[(2,1),\,(2,2),\,(2,2),\,(1,1)]$ sobre los ejes (tiempo y frecuencia), lo que produce un factor de submuestreo de $c_T = 8$ en tiempo
+y de $c_F = 4$ en frecuencia. El resultado es un mapa de características de baja
+resolución de dimensiones $(T', F') = (T/8,\, F/4)$, equivalente a parches de tamaño
+$8 \times 4$ sobre el espectrograma original~\cite{yan2024transkun}. Cada capa
+convolucional va seguida de una normalización \textbf{GroupNorm} con 4 grupos y una
+activación GELU, a excepción de la última capa.
+
+Tras el submuestreo, se añaden \textbf{embeddings de posición espacial aprendibles}
+basados en características de Fourier (\foreign{english}{learnable Fourier features})~\cite{li2021fourier},
+tanto a las representaciones tiempo-frecuencia del espectrograma (con coordenadas
+$(\textit{frameIdx},\, \textit{freqIdx})$) como a los \foreign{english}{event tracks}
+(con coordenadas $(\textit{frameIdx},\, \textit{eventTypeIdx})$)~\cite{yan2024transkun}. Este embedding
+se computa como:
+
+\begin{equation}
+  \boldsymbol{y} = g\!\left(\sqrt{\tfrac{2}{B}}\,\cos(\boldsymbol{W}_r\,\boldsymbol{x} + \boldsymbol{b})\right)
+  \label{eq:fourier_pos}
+\end{equation}
+
+\noindent donde $\boldsymbol{W}_r \in \mathbb{R}^{B \times C}$ es una matriz aprendible
+inicializada desde $\mathcal{N}(0,\,\gamma^{-2})$; $\boldsymbol{b} \in \mathbb{R}^B$
+es un sesgo aprendible inicializado desde $\mathcal{U}(-\pi,\,+\pi)$; $B$ es la
+dimensión de las características de Fourier; $\gamma$ es un hiperparámetro de escala;
+y $g : \mathbb{R}^B \to \mathbb{R}^E$ es un perceptrón de dos capas~\cite{yan2024transkun}.
+Este embedding funciona como una red MLP que toma coordenadas espaciales como entrada,
+con la primera no linealidad siendo una función coseno escalada. Se elige por su
+sencillez y amplia compatibilidad con arquitecturas transformer~\cite{yan2024transkun}.
+
+\subsection*{Event tracks y concatenación}
+
+Para obtener las representaciones necesarias para el scoring de intervalos, el sistema
+introduce el concepto de \textbf{\foreign{english}{event track}}: una secuencia
+de vectores de baja resolución temporal, uno por tipo de evento (88 notas + pedales),
+que actuará como representación aprendible de cada tipo de evento a lo largo del tiempo.
+Estos \foreign{english}{event tracks} se inicializan con sus propios embeddings de
+posición espacial y se \textbf{concatenan} a las representaciones del espectrograma
+submuestreado a lo largo de la dimensión de secuencia. De este modo, el transformer
+encoder recibe como entrada una secuencia mixta que combina las representaciones
+tiempo-frecuencia del audio y los \foreign{english}{event tracks} de todos los tipos
+de evento, y puede intercambiar información entre ambas a través del mecanismo de
+auto-atención~\cite{yan2024transkun}.
+
+\subsection*{Transformer encoder no jerárquico}
+
+El transformer encoder es el componente central del sistema. Se trata de un
+\textbf{encoder no jerárquico} (sin submuestreo adicional ni estructura piramidal)
+compuesto por $L = 6$ capas, cada una de las cuales contiene dos bloques transformer
+en cascada: uno que atiende a lo largo del \textbf{eje temporal} y otro a lo largo del
+\textbf{eje de frecuencia o tipo de evento}, alternando en cada capa para reducir el
+coste computacional~\cite{yan2024transkun}. Esta estrategia de atención axial separable
+es análoga a la empleada en otras arquitecturas transformer eficientes para datos
+multidimensionales~\cite{ho2019axial,ristea2022septr}.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.55\linewidth}
+    \centering
+    \includegraphics[height=0.32\textheight,keepaspectratio]{figuras/sub_a.png}
+    \caption{TransformerBlock}
+    \label{fig:transkun_encoder_a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.35\linewidth}
+    \centering
+    \includegraphics[height=0.32\textheight,keepaspectratio]{figuras/sub_b.png}
+    \caption{Encoder}
+    \label{fig:transkun_encoder_b}
+  \end{subfigure}
+  \caption[Bloques del transformer encoder de TranskUN]%
+  {Bloques constitutivos del transformer encoder. (a) Bloque transformer básico con
+  pre-normalización RMSNorm y conexión residual escalada mediante ReZero. (b)
+  Organización de los bloques en cada capa del encoder, alternando la atención sobre
+  el eje temporal y el eje de frecuencia o tipo de evento. Ilustración adaptada
+  de~\cite{yan2024transkun}.}
+  \label{fig:transkun_encoder}
+\end{figure}
+
+Cada bloque transformer sigue el diseño estándar de \foreign{english}{pre-normalización}:
+primero se aplica \textbf{RMSNorm}~\cite{zhang2019rmsnorm} sobre la entrada, después
+la capa de auto-atención o de red neuronal de avance (\foreign{english}{feed-forward
+network}, FFN con tamaño 1024), y finalmente la salida se añade a la conexión residual.
+Para mejorar la estabilidad durante el entrenamiento de modelos profundos, se emplea
+\textbf{ReZero}~\cite{bachlechner2021rezero}: un factor de escala aprendible $\lambda$,
+inicializado a $0{,}01$, multiplica la salida de cada sublcapa antes de sumarse al
+residual. Este mecanismo permite que, al inicio del entrenamiento, la salida de cada
+bloque sea casi idéntica a su entrada, facilitando el flujo del gradiente y acelerando
+la convergencia. El encoder utiliza 8 cabezas de atención y una dimensión de embedding
+de 256~\cite{yan2024transkun}.
+
+\subsection*{Remuestreo temporal}
+
+Tras el procesado por el transformer encoder, solo se retienen los \foreign{english}{event
+tracks} (descartando las representaciones del espectrograma), ya que son estos vectores
+los que se utilizarán para el scoring de intervalos. Dado que los \foreign{english}{event
+tracks} operan en la resolución temporal reducida $(T' = T/8)$, es necesario recuperar
+la resolución original para asignar puntuaciones a intervalos con precisión de trama.
+
+Para ello se aplica una única \textbf{capa convolucional transpuesta 1D}
+(\texttt{ConvTranspose1d}) con tamaño de kernel y \foreign{english}{stride} igual a~8,
+128 canales de salida y sin activación no lineal. Esta capa realiza un remuestreo
+\textbf{lineal} a lo largo del eje temporal que, como se demuestra en el
+Teorema~3.2 del artículo~\cite{yan2024transkun} (discutido en detalle en la
+Sección~\ref{sec:transkun_scoring}), es suficiente para preservar la expresividad del
+operador de scoring siempre que la dimensionalidad $D'$ del espacio de baja resolución
+supere el producto $c \cdot |\mathcal{Y}|$, donde $c = 8$ es el factor de remuestreo
+y $|\mathcal{Y}|$ es el número de intervalos activos. Los \foreign{english}{event tracks}
+resultantes tienen dimensiones $(T \times D)$ con $D = 128$, y constituyen la entrada al
+módulo de scoring de intervalos descrito en la sección siguiente.
+
+
+\section{\textit{Scoring} por producto interior y semi-CRF}
+\label{sec:transkun_scoring}
+
+El núcleo matemático de Transkun reside en dos elementos:
+el \textbf{campo aleatorio condicional semi-Markoviano} (\foreign{english}{neural
+semi-Markov Conditional Random Field}, semi-CRF), que proporciona el marco de
+predicción estructurada para modelar conjuntos de intervalos no solapados; y el
+\textbf{\foreign{english}{scoring} por producto interior escalado}, que constituye
+el método para asignar una puntuación a cada intervalo candidato de forma
+eficiente y teóricamente fundamentada~\cite{yan2024transkun}. En esta sección se describe primero el
+\textit{framework} semi-CRF y su formulación probabilística, y a continuación se presenta
+el método de \foreign{english}{scoring} propuesto, su justificación teórica y su
+relación con el mecanismo de atención de los transformers.
+
+\subsection*{El \textit{framework} neural semi-CRF}
+
+Para una secuencia de $T$ tramas de audio, el objetivo de la transcripción puede
+formularse como la inferencia de un conjunto $\mathcal{Y}$ de intervalos cerrados
+no solapados de la forma $[i, j]$, donde $i$ y $j$ son índices de trama de inicio
+y fin respectivamente, y cada intervalo se asocia a un tipo de evento específico
+(una nota concreta o un pedal). El semi-CRF modela directamente esta estructura
+de salida definiendo, para cada tipo de evento, dos tipos de puntuaciones a partir
+de la señal de audio $\mathcal{X}$~\cite{yan2021semicrf1,yan2024transkun}:
+
+\begin{enumerate}
+  \item $\text{score}(i, j)$: una matriz triangular $T \times T$ que asigna una
+  puntuación a cada intervalo candidato $[i, j]$, indicando en qué medida dicho
+  intervalo corresponde a un evento activo del tipo de evento dado. Los valores
+  diagonales $\text{score}(i, i)$ representan eventos de trama única.
+  \item $\text{score}_\epsilon(i-1, i)$: un vector de dimensión $T-1$ que asigna
+  una puntuación a cada par de tramas consecutivas $[i-1, i]$ no cubiertas por
+  ningún intervalo en $\mathcal{Y}$, representando la inactividad del tipo de evento
+  en ese instante.
+\end{enumerate}
+
+La puntuación total de un conjunto de intervalos $\mathcal{Y}$ dada la entrada
+$\mathcal{X}$ se define como~\cite{yan2024transkun}:
+
+\begin{equation}
+  \Phi(\mathcal{Y} \mid \mathcal{X}) =
+  \sum_{[i,j] \in \mathcal{Y}} \text{score}(i, j) \;+\;
+  \sum_{\substack{[i-1,i] \\ \text{no cubierto en } \mathcal{Y}}} \text{score}_\epsilon(i-1, i)
+  \label{eq:semicrf_total}
+\end{equation}
+
+\noindent Para la \textbf{inferencia}, se utiliza la estimación del máximo a
+posteriori (MAP), que recupera el conjunto óptimo de intervalos no solapados
+mediante programación dinámica (algoritmo de Viterbi):
+
+\begin{equation}
+  \mathcal{Y}^* = \arg\max_{\mathcal{Y}}\; \Phi(\mathcal{Y} \mid \mathcal{X})
+  \label{eq:semicrf_map}
+\end{equation}
+
+\noindent Para el \textbf{entrenamiento}, se emplea estimación de máxima
+verosimilitud (MLE), con la log-verosimilitud condicional definida como:
+
+\begin{equation}
+  \log p(\mathcal{Y} \mid \mathcal{X}) =
+  \Phi(\mathcal{Y} \mid \mathcal{X}) -
+  \log \sum_{\mathcal{Y}'} \exp\,\Phi(\mathcal{Y}' \mid \mathcal{X})
+  \label{eq:semicrf_mle}
+\end{equation}
+
+\noindent donde la suma en el segundo término recorre todos los posibles conjuntos
+de intervalos no solapados. Este término de normalización, equivalente a la función
+de partición del modelo, se computa eficientemente mediante un algoritmo \foreign{english}{forward-backward}~\cite{yan2021semicrf1}.
+Se instancia un semi-CRF independiente para cada tipo de evento, procesando en
+paralelo los 88 tipos de nota y los pedales.
+
+\subsection*{\textit{Scoring} por producto interior escalado}
+
+El módulo de \foreign{english}{scoring} es el componente responsable de calcular
+la matriz $\text{score}(i, j)$ a partir de las representaciones del modelo.
+En el semi-CRF original~\cite{yan2021semicrf1}, este módulo empleaba un MLP que
+tomaba como entrada los \textit{embeddings} de los extremos del intervalo $\boldsymbol{h}_i$
+y $\boldsymbol{h}_j$, su producto de Hadamard $\boldsymbol{h}_i \odot \boldsymbol{h}_j$
+y los tres primeros momentos estadísticos sobre el intervalo:
+
+\begin{equation}
+  \text{score}(i, j) = \text{MLP}([\boldsymbol{h}_i,\, \boldsymbol{h}_j,\,
+  \boldsymbol{h}_i \odot \boldsymbol{h}_j,\, \boldsymbol{m}_1,\,
+  \boldsymbol{m}_2,\, \boldsymbol{m}_3])
+  \label{eq:scoring_mlp}
+\end{equation}
+
+Este enfoque resulta costoso en memoria, ya que la matriz de \foreign{english}{scoring}
+crece cuadráticamente con la longitud de la secuencia, y la evaluación del MLP para
+cada par $(i, j)$ requiere procesamiento por segmentos y \foreign{english}{gradient
+checkpointing} durante el entrenamiento, lo que limita la capacidad y profundidad del
+módulo~\cite{yan2024transkun}.
+
+Transkun propone sustituir este módulo por una operación de
+\textbf{producto interior escalado} entre vectores de baja dimensión:
+
+\begin{equation}
+  \text{score}(i, j) = \frac{|j - i|}{\sqrt{D}}\,\langle \boldsymbol{q}_i,\,
+  \boldsymbol{k}_j \rangle + b_i\,\delta(i, j)
+  \label{eq:scoring_ip}
+\end{equation}
+
+\noindent donde $\delta(i, j)$ es la delta de Kronecker, que vale 1 si $i = j$ y
+0 en caso contrario. Los vectores $\boldsymbol{q}_i \in \mathbb{R}^D$,
+$\boldsymbol{k}_i \in \mathbb{R}^D$ y el escalar $b_i \in \mathbb{R}$ se obtienen
+directamente del \foreign{english}{event track} $\boldsymbol{h}_i$ mediante una
+única capa lineal $f$:
+
+\begin{equation}
+  [\boldsymbol{q}_i,\, \boldsymbol{k}_i,\, b_i] = f(\boldsymbol{h}_i)
+  \label{eq:kqb}
+\end{equation}
+
+La matriz de \foreign{english}{scoring} resultante tiene una estructura de
+\textbf{rango bajo más diagonal}: el término del producto interior produce una
+matriz de rango $D$, y el término diagonal $b_i\,\delta(i,j)$ añade los valores
+de la diagonal principal de forma independiente. Esta formulación, denominada
+\foreign{english}{Scaled Inner Product Interval Scoring}, es notablemente más
+simple que el MLP original y no requiere calcular momentos estadísticos sobre
+el intervalo~\cite{yan2024transkun}.
+
+Una pregunta natural es si la simplicidad del producto interior implica una pérdida
+de capacidad expresiva respecto al MLP original. Yan y Duan demuestran formalmente
+que, bajo una condición moderada sobre el rango de las representaciones, el producto
+interior es suficientemente expresivo para representar cualquier matriz de
+\foreign{english}{scoring} ideal~\cite{yan2024transkun}.
+
+Para formalizar esto, se define una \textbf{matriz de \foreign{english}{scoring}
+ideal} $\boldsymbol{S}_\mathcal{Y} \in \mathbb{R}^{T \times T}$ para un conjunto
+de intervalos $\mathcal{Y}$ como aquella tal que:
+
+\[
+  \boldsymbol{S}_\mathcal{Y}(i,j) > 0 \quad \forall\,[i,j] \in \mathcal{Y},
+  \qquad
+  \boldsymbol{S}_\mathcal{Y}(i,j) = -\epsilon \quad \text{en caso contrario}
+\]
+
+\noindent con $\epsilon > 0$. Con esta matriz, la decodificación MAP produce
+necesariamente $\mathcal{Y}$, ya que excluir cualquier intervalo activo o incluir
+cualquier intervalo inactivo reduciría la puntuación total.
+
+\begin{lemma*}[Yan y Duan, 2024]
+El rango de una matriz de \foreign{english}{scoring} ideal $\boldsymbol{S}_\mathcal{Y}$
+para un conjunto de intervalos no solapados $\mathcal{Y}$ es $M + 1$, donde
+$M = |\mathcal{Y}|$ es el número de intervalos activos.
+\end{lemma*}
+
+\begin{theorem*}[Yan y Duan, 2024]
+Sea $\mathcal{Y}$ un conjunto de $M$ intervalos no solapados sobre $T$ pasos.
+Una matriz de \foreign{english}{scoring} ideal $\boldsymbol{S}_\mathcal{Y}$ puede
+representarse como el producto interior por pares entre dos secuencias 1D
+$(\boldsymbol{k}_i)_i$ y $(\boldsymbol{q}_i)_i$ de vectores:
+\[
+  \boldsymbol{S}_\mathcal{Y}(i,j) = \langle \boldsymbol{q}_i, \boldsymbol{k}_j \rangle
+\]
+\text{con} $\mathrm{rank}(\boldsymbol{Q}_\mathcal{Y}) > M$ \text{y}
+$\mathrm{rank}(\boldsymbol{K}_\mathcal{Y}) > M$, donde
+$\boldsymbol{Q}_\mathcal{Y} = [\boldsymbol{q}_0, \ldots, \boldsymbol{q}_{T-1}]$
+y $\boldsymbol{K}_\mathcal{Y} = [\boldsymbol{k}_0, \ldots, \boldsymbol{k}_{T-1}]$.
+\end{theorem*}
+
+Este resultado tiene dos implicaciones prácticas directas~\cite{yan2024transkun}.
+En primer lugar, la dimensión $D$ de los vectores $\boldsymbol{q}_i$ y
+$\boldsymbol{k}_i$ debe superar el número total de intervalos activos $|\mathcal{Y}|$.
+En segundo lugar, si los vectores se obtienen aplicando un operador de remuestreo
+lineal $u_c$ sobre una secuencia de baja resolución temporal (como hace la capa
+\texttt{ConvTranspose1d} del sistema), la dimensión requerida en el espacio de baja
+resolución es $D' > c \cdot |\mathcal{Y}|$, donde $c = T/T'$ es el factor de
+remuestreo. Esto garantiza que operar sobre el mapa de características submuestreado
+no implica ninguna pérdida de expresividad, siempre que la dimensión de los
+embeddings sea suficientemente alta.
+
+\subsection*{Relación con el mecanismo de atención}
+
+La analogía entre el \foreign{english}{scoring} propuesto en la
+Ecuación~\ref{eq:scoring_ip} y el mecanismo de atención por producto interior
+escalado de los transformers~\cite{vaswani2017attention} es inmediata: ambos computan
+una puntuación escalar para cada par de posiciones $(i, j)$ de una secuencia mediante
+el producto interior entre un vector de consulta $\boldsymbol{q}_i$ y un vector de
+clave $\boldsymbol{k}_j$, escalado por $1/\sqrt{D}$. Sin embargo, existen diferencias
+estructurales relevantes. La atención normaliza las puntuaciones por posición mediante
+una operación \textit{softmax}, lo que convierte cada fila de la matriz en una
+distribución de probabilidad local. El semi-CRF, en cambio, normaliza de forma
+\textbf{global} sobre todos los posibles conjuntos de intervalos no solapados
+$\mathcal{Y}'$, lo que garantiza que la decodificación sea globalmente óptima
+en lugar de localmente \textit{greedy}~\cite{yan2024transkun}.
+
+Esta analogía no es meramente formal: motiva directamente la elección del transformer
+como \foreign{english}{backbone} para producir las representaciones $(\boldsymbol{h}_i)$
+que alimentan el módulo de \foreign{english}{scoring}. El transformer puede
+interpretarse como una arquitectura que refina iterativamente las representaciones
+de una secuencia precisamente para que sean adecuadas para el \foreign{english}{scoring}
+por producto interior, lo que establece una coherencia entre la arquitectura del
+modelo y el mecanismo de salida~\cite{yan2024transkun}.
+
+Por último, cabe señalar que el estudio de ablación presentado en el artículo
+original demuestra que una capa lineal para el cálculo de los vectores
+$\boldsymbol{q}$, $\boldsymbol{k}$ y $b$ (Ecuación~\ref{eq:kqb}) obtiene mejores
+resultados que un MLP, lo que refuerza la analogía con los transformers, donde
+$\boldsymbol{q}$ y $\boldsymbol{k}$ se calculan también mediante proyecciones
+lineales~\cite{yan2024transkun}.
+
+
+\section{Predicción de atributos y procesado por segmentos}
+\label{sec:transkun_attrs}
+
+La capa semi-CRF produce, tras la decodificación MAP, un conjunto de intervalos
+$[i, j]$ para cada tipo de evento, que especifican el inicio y el fin de cada nota
+o pedal con precisión de trama. Sin embargo, la representación MIDI final requiere
+información adicional que no está codificada en los índices de trama: la
+\textbf{velocidad} de cada nota, las \textbf{posiciones subframe} de inicio y fin
+para dequantizar los instantes exactos de onset y offset, y un par de indicadores
+binarios para gestionar correctamente los eventos que cruzan los límites entre
+segmentos de audio consecutivos. En esta sección se describen el módulo de
+predicción de estos atributos y la estrategia de procesado por segmentos que
+permite transcribir grabaciones de duración arbitraria.
+
+\subsection*{Predicción de atributos por evento}
+
+Una vez decodificados los intervalos, cada evento $[a, b]$ de un tipo de evento
+concreto se caracteriza mediante cuatro atributos, predichos por un
+\textbf{MLP de dos capas} con tamaño oculto de 512 unidades y \foreign{english}{dropout}
+de tasa $0{,}1$~\cite{yan2024transkun}. La entrada al MLP son los embeddings del
+\foreign{english}{event track} en los extremos del intervalo,
+$\boldsymbol{h}_a^{\text{eventType}}$ y $\boldsymbol{h}_b^{\text{eventType}}$,
+concatenados:
+
+\begin{itemize}
+  \item \textbf{Velocidad} (\foreign{english}{velocity}) $\in \{0, \ldots, 127\}$:
+  modelada como una distribución categórica sobre 128 clases mediante una capa
+  \foreign{english}{softmax}. La velocidad MIDI representa la intensidad de pulsación
+  de cada tecla y es un valor entero en el rango estándar MIDI~\cite{yan2024transkun}.
+
+  \item \textbf{Posiciones refinadas de onset y offset}: dado que los índices de
+  trama $a$ y $b$ son posiciones cuantizadas (cada trama tiene una duración de
+  aproximadamente $23{,}2~\mathrm{ms}$ con un \foreign{english}{hop size} de 1024
+  muestras a $44\,100~\mathrm{Hz}$), los instantes exactos de inicio y fin de cada
+  nota pueden caer en cualquier punto dentro de esa trama. Para recuperar esta
+  información subframe, el modelo predice un valor $\in (-0{,}5,\, 0{,}5)$ para
+  cada extremo, que indica el desplazamiento relativo respecto al índice cuantizado.
+  Estos valores se modelan mediante una \textbf{distribución de Bernoulli continua}
+  desplazada en $-0{,}5$~\cite{loaiza2019contbernoulli}, que proporciona una
+  distribución de probabilidad bien definida sobre el intervalo abierto
+  $(-0{,}5,\, 0{,}5)$ con soporte continuo y gradientes no nulos en todo el dominio~\cite{yan2024transkun}.
+
+  \item \textbf{Indicadores} \texttt{hasOnset} \textbf{y} \texttt{hasOffset}
+  $\in \{0, 1\}$: dos variables binarias modeladas mediante distribuciones de
+  Bernoulli, cuyo significado se detarán a continuación.
+\end{itemize}
+
+La pérdida de entrenamiento del módulo de predicción de atributos se suma a la
+log-verosimilitud del semi-CRF (Ecuación~\ref{eq:semicrf_mle}), de forma que el
+objetivo total es~\cite{yan2024transkun}:
+
+\begin{equation}
+  \mathcal{L} = -\left[\log p(\mathcal{Y} \mid \mathcal{X}) +
+  \sum_{e \in \mathcal{Y}} \log p(\text{atributos} \mid e)\right]
+  \label{eq:loss_total_transkun}
+\end{equation}
+
+\noindent donde el segundo término se descompone en:
+
+\begin{equation}
+\begin{split}
+  \log p(\text{atributos} \mid e)
+  ={}& \log p(\text{velocity} \mid e) \\
+     &+ \log p(\text{onset refinado} \mid e) \\
+     &+ \log p(\text{offset refinado} \mid e)
+\end{split}
+\label{eq:loss_attrs}
+\end{equation}
+
+\subsection*{Procesado por segmentos y gestión de eventos incompletos}
+
+El transformer encoder opera sobre segmentos de audio de duración fija de
+\textbf{16 segundos}. Para transcribir grabaciones de mayor duración, el audio se
+divide en segmentos consecutivos con un \textbf{solapamiento del 50\,\%} (8 segundos
+de solape entre segmentos adyacentes), y los resultados de cada segmento se ensamblan
+en una secuencia global de eventos~\cite{yan2024transkun}.
+
+El principal desafío de esta estrategia es la gestión de los eventos que
+\textbf{cruzan el límite} de un segmento: una nota larga que comienza en el segmento
+$k$ y termina en el segmento $k+1$ no puede representarse como un único intervalo
+$[i, j]$ dentro de ninguno de los dos segmentos por separado. El semi-CRF original
+de Yan \textit{et al.}~\cite{yan2021semicrf1} resolvía este problema descartando
+directamente todos los eventos que excedían el límite del segmento durante el
+entrenamiento. TranskUN adopta una solución más precisa: en lugar de descartar,
+\textbf{trunca} el evento en el límite del segmento e introduce dos indicadores
+binarios por evento para registrar si el truncamiento ha tenido lugar~\cite{yan2024transkun}:
+
+\begin{itemize}
+  \item \texttt{hasOnset} $= 1$: el onset del evento pertenece al segmento actual
+  (no ha sido truncado por el límite izquierdo).
+  \item \texttt{hasOffset} $= 1$: el offset del evento pertenece al segmento actual
+  (no ha sido truncado por el límite derecho).
+\end{itemize}
+
+Con estos indicadores, el algoritmo de decodificación por segmentos sigue la
+siguiente lógica para cada tipo de evento~\cite{yan2024transkun}:
+
+\begin{enumerate}
+  \item El proceso de decodificación dentro de cada segmento comienza desde el
+  máximo entre: (a) el límite izquierdo del segmento actual, y (b) el offset del
+  último evento en el conjunto resultado con \texttt{hasOffset} $= 1$.
+
+  \item Los eventos decodificados con \texttt{hasOnset} $= 1$ que no se solapan
+  con el último evento del conjunto resultado se añaden directamente.
+
+  \item Para los eventos que se solapan con el último evento del conjunto resultado:
+  \begin{itemize}
+    \item Si el nuevo evento tiene \texttt{hasOnset} $= 1$, reemplaza al anterior
+    (el anterior era un fragmento truncado que ya no tiene soporte en el nuevo segmento).
+    \item Si el nuevo evento tiene \texttt{hasOnset} $= 0$, se trata de la
+    continuación del evento anterior, y ambos fragmentos se \textbf{fusionan} en
+    un único evento.
+  \end{itemize}
+\end{enumerate}
+
+Este mecanismo es especialmente relevante para los \textbf{pedales}, que con frecuencia
+superan los 16 segundos de duración de un segmento (en particular el pedal \textit{sustain}),
+mientras que las notas individuales raramente exceden este límite. El estudio de
+ablación presentado en el artículo original confirma que omitir el tratamiento de
+eventos incompletos produce una degradación notable en las métricas de pedal pero tiene un impacto prácticamente nulo en las
+métricas de notas~\cite{yan2024transkun}.
+
+
+\section{Configuración del experimento}
+\label{sec:transkun_config}
+  
+
+\section{Preproceso y entrenamiento}
+\label{sec:transkun_preprocess}
+
+
+\section{Resultados}
+\label{sec:transkun_resultados}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                 CONCLUSIONS                                 %
@@ -1333,6 +1921,56 @@ Y.~Yan, F.~Cwitkowitz y Z.~Duan.
 Y.~Yan y Z.~Duan.
 \newblock Scoring time intervals using non-hierarchical transformer for automatic piano transcription.
 \newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, pp. 1--8, 2024.
+
+\bibitem{dosovitskiy2021vit}
+Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit y Neil Houlsby.
+\newblock An image is worth 16x16 words: Transformers for image recognition at scale.
+\newblock \textit{International Conference on Learning Representations (ICLR)}, 2021.
+
+\bibitem{kwon2020polyphonic}
+Taegyun Kwon, Dasaem Jeong y Juhan Nam.
+\newblock Polyphonic piano transcription using autoregressive multi-state note model.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, pp. 454--461, 2020.
+
+\bibitem{bachlechner2021rezero}
+T.~Bachlechner, B.~P. Majumder, H.~Mao, G.~Cottrell y J.~McAuley.
+\newblock ReZero is all you need: Fast convergence at large depth.
+\newblock \textit{Proceedings of the Thirty-Seventh Conference on Uncertainty in Artificial Intelligence (UAI)}, vol. 161, pp. 1352--1361, 2021.
+
+\bibitem{ho2019axial}
+J.~Ho, N.~Kalchbrenner, D.~Weissenborn y T.~Salimans.
+\newblock Axial attention in multidimensional transformers.
+\newblock \textit{arXiv preprint arXiv:1912.12180}, 2019.
+
+\bibitem{li2021fourier}
+Y.~Li, S.~Si, G.~Li, C.-J. Hsieh y S.~Bengio.
+\newblock Learnable {Fourier} features for multi-dimensional spatial positional encoding.
+\newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2021.
+
+\bibitem{li2022videt}
+Y.~Li, H.~Mao, R.~Girshick y K.~He.
+\newblock Exploring plain vision transformer backbones for object detection.
+\newblock \textit{European Conference on Computer Vision (ECCV)}, pp. 280--296, 2022.
+
+\bibitem{ristea2022septr}
+N.-C. Ristea, R.~T. Ionescu y F.~S. Khan.
+\newblock Septr: Separable transformer for audio spectrogram processing.
+\newblock \textit{Proceedings of INTERSPEECH}, pp. 4103--4107, 2022.
+
+\bibitem{zhang2019rmsnorm}
+B.~Zhang y R.~Sennrich.
+\newblock Root mean square layer normalization.
+\newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2019.
+
+\bibitem{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N.~Gomez, Łukasz Kaiser e Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2017.
+
+\bibitem{loaiza2019contbernoulli}
+G.~Loaiza-Ganem y J.~P. Cunningham.
+\newblock The continuous {Bernoulli}: Fixing a pervasive error in variational autoencoders.
+\newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2019.
 
 \end{thebibliography}
 
