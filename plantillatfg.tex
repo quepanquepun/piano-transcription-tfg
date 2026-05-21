@@ -31,7 +31,8 @@
 % Para conseguir que la tabla de contenido no salga en rojo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\hypersetup{ colorlinks=true, linkcolor=black, urlcolor=cyan, }
+\hypersetup{ colorlinks=true, linkcolor=red, urlcolor=cyan, }
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                        ALTRES PAQUETS I DEFINICIONS                         %
@@ -50,6 +51,9 @@
 \usepackage{amsthm}
 \newtheorem*{lemma*}{Lema}
 \newtheorem*{theorem*}{Teorema}
+
+\usepackage{placeins}
+\raggedbottom
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                        DADES DEL TREBALL                                    %
@@ -554,64 +558,47 @@ más representativa de la calidad de la transcripción completa.
 
 \section{Introducción}
 
-La transcripción de música de piano polifónico mediante redes neuronales se aborda principalmente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes}.
-En lugar de predecir la representación MIDI en un único paso, el sistema descompone la transcripción en varios objetivos interrelacionados: estimación del tono a nivel de frame (\foreign{english}{frame-wise pitch}),
-la detección del inicio de la nota (\foreign{english}{onset}), la detección del final (\foreign{english}{offset}), y la estimación de la intensidad o velocidad (\foreign{english}{velocity}). Dada la fuerte correlación
-entre estos eventos, el rendimiento general del sistema mejora significativamente al intercambiar información entre las diferentes tareas.
+La transcripción de música de piano polifónico mediante redes neuronales se aborda principalmente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes},
+en el que se estiman de forma conjunta el tono a nivel de \textit{frame}, los \textit{onsets}, \textit{offsets} y la velocidad de las notas. Esta formulación permite explotar la fuerte correlación entre estos eventos para mejorar la 
+precisión global del sistema, pero también pone de manifiesto las limitaciones de las arquitecturas multitarea clásicas, que pueden sufrir transferencia negativa o una fusión ineficaz de la información cuando las tareas comparten parámetros 
+de manera demasiado rígida o combinan características sin un mecanismo de ponderación adecuado~\cite{wang2025mftfilm}.
 
-Sin embargo, las arquitecturas multitarea clásicas presentan limitaciones estructurales~\cite{wang2025mftfilm}. Estrategias como la compartición estricta de parámetros (\foreign{english}{hard parameter sharing}) pueden sufrir transferencias
-negativas debido a conflictos o discrepancias entre los resultados de distintas tareas. Por otro lado, la concatenación o adición directa de las características carece de los pesos
-adecuados para fusionar dinámicamente las representaciones extraídas por cada rama de la red.
 
-Para abordar estos problemas, en este proyecto, la primera alternativa que se ha implementado es el modelo \textbf{MFT-FiLM} (\foreign{english}{Multitask Frequency-Time Feature-Wise Linear Modulation}),
-propuesto por  Wang \textit{et al.}~\cite{wang2025mftfilm}. Este sistema introduce un mecanismo de acondicionamiento transversal basado en capas de modulación lineal (\foreign{english}{Feature-wise Linear Modulation}, FiLM), diseñadas originalmente para tareas de razonamiento visual, y adaptadas
-aquí para la fusión de dependencias espectro-temporales en la señal del audio de entrada.
+En este proyecto, la primera alternativa que se ha implementado es el modelo \textbf{MFT-FiLM}, que propone un enfoque más flexible y eficiente 
+basado en el acondicionamiento mediante FiLM para fusionar dependencias espectrales y temporales, así como para intercambiar información entre las
+distintas ramas de tarea. El uso de módulos FT-FiLM e IFT-FiLM permite ajustar dinámicamente las representaciones intermedias en función del contexto, 
+obteniendo un modelo con un número de parámetros reducido que mantiene un rendimiento competitivo en la transcripción de piano a partir de 
+representaciones adaptadas a la percepción musical.
 
-La arquitectura central del MFT-FiLM se basa en dos innovaciones fundamentales: 
-\begin{enumerate}
-  \item \textbf{Módulo FT-FiLM:} un bloque que se encarga de extraer información espectral y temporal de forma jerárquica, usando convoluciones unidimensionales a lo largo del eje de frecuencia
-  y redes neuronales recurrentes (FG-LSTM) para capturar la dependencia temporal de los \foreign{english}{frames} de audio~\cite{wang2025mftfilm}. A diferencia de otras arquitecturas, este módulo aplica una transformación
-  afín condicionada para auto-modular las características.
-  \item \textbf{Módulo IFT-FiLM (Inter-Task FiLM):} permite la interacción de información cruzada entre las distintas tareas. Mediante el uso de operaciones de transformación a nivel de tiempo y frecuencia, el sistema modula dinámicamente las características de una rama (por ejemplo \foreign{english}{Frame offset}) utilizando como información condicional o auxiliar los parámetros generados por otras ramas (por ejemplo \foreign{english}{Frame onset})~\cite{wang2025mftfilm}.
-\end{enumerate}
+En este capítulo, la Sección~\ref{sec:cqt} introduce la representación tiempo--frecuencia empleada, basada en la Transformada Q Constante (CQT).
+A continuación, la Sección~\ref{sec:mft_arch} describe la arquitectura general del sistema y detalla los módulos FiLM, FT-FiLM e IFT-FiLM.
+La Sección~\ref{sec:mft_loss_eff} presenta la función de pérdida conjunta y analiza la eficiencia computacional del modelo.
+En la Sección~\ref{sec:mft_preprocess} se explica el preproceso de los datos y el procedimiento de entrenamiento, 
+y finalmente la Sección~\ref{sec:mft_resultados} resume los resultados obtenidos y su comparación con modelos del estado del arte.
+\section{Transformada Q Constante}
+\label{sec:cqt}
 
-La implementación de este modelo resulta especialmente atractiva para la extracción de \foreign{english}{Performance} MIDI debido a su alta eficiencia computacional. A pesar de lograr métricas SOTA, el modelo MFT-FiLM requiere un volumen de parámetros 
-muy pequeño (aproximadamente $1{,}2$ millones), reduciendo la complejidad computacional y costes de entrenamiento sin sacrificar precisión acústica.
+El primer paso, antes de que la señal de audio entre en la red neuronal, es aplicar una cadena de preprocesamiento. El audio se convierte a mono
+y se remuestrea a $16~\mathrm{kHz}$. El oído humano no percibe las frecuencias de forma lineal: la diferencia perceptual entre $100~\mathrm{Hz}$
+y $200~\mathrm{Hz}$ es la misma que entre $1000~\mathrm{Hz}$ y $2000~\mathrm{Hz}$, ya que en ambos casos la segunda es el doble de la primera
+(diferencia de una octava musical). Las transformaciones tiempo--frecuencia clásicas como la \textbf{Transformada de Fourier de tiempo corto}
+(STFT) distribuyen las bandas de forma \textbf{lineal}, lo que implica que las frecuencias graves quedan con poca resolución y las frecuencias agudas
+con resolución excesiva, algo que no se corresponde ni con la estructura de la música ni con la percepción auditiva.
 
-En este capítulo, la Sección~\ref{sec:mft_arch} describe la arquitectura del sistema, desde la representación tiempo--frecuencia de entrada hasta la organización de las ramas multitarea y los módulos FiLM. La Sección~\ref{sec:mft_loss_eff} detalla la función de pérdida conjunta empleada y analiza la eficiencia computacional del modelo en términos de número de parámetros y complejidad de cómputo. A continuación, la Sección~\ref{sec:mft_config} expone el entorno de cómputo y la configuración experimental utilizada para el entrenamiento sobre MAESTRO. En la Sección~\ref{sec:mft_preprocess} se describe el preprocesamiento del \textit{dataset}, la generación de la caché y el desarrollo práctico del proceso de entrenamiento en el clúster. Finalmente, en la Sección~\ref{sec:mft_resultados} se presentan los resultados obtenidos y se discute el rendimiento del modelo frente a trabajos previos del estado del arte.
+Es por esto por lo que se usa la \textbf{Transformada Q Constante} (\foreign{english}{Constant-Q Transform}, CQT), que distribuye las
+bandas de frecuencia en escala logarítmica, alineándose con la percepción musical y con la disposición de las teclas en el piano~\cite{wang2025mftfilm}. En la
+CQT, cada \textit{bin} cubre una banda proporcional a su frecuencia central, manteniendo una razón constante entre frecuencia y resolución (Q constante), 
+lo que se traduce en ventanas temporales más largas en bajas frecuencias y más cortas en altas. Esto
+permite representar de forma más uniforme la energía armónica a lo largo de todo el rango del piano y facilita que la red neuronal aprenda
+patrones armónicos y melódicos coherentes con la notación musical.
 
-\section{Arquitectura del modelo}
-\label{sec:mft_arch}
-El primer paso, antes de que la señal de audio entre en la red neuronal, es aplicar una cadena de preprocesamiento. El audio se convierte a mono y se remuestrea a $16~\mathrm{kHz}$. El oído humano no percibe las frecuencias de forma lineal: la diferencia perceptual entre 
-$100~\mathrm{Hz}$ y $200~\mathrm{Hz}$ es la misma que entre $1000~\mathrm{Hz}$ y $2000~\mathrm{Hz}$, ya que en ambos casos la segunda es el doble de la primera (diferencia de una octava musical).
-Las transformaciones tiempo-frecuencia clásicas como la \textbf{Transformada de Fourier de tiempo corto} (STFT) distribuyen las bandas de forma \textbf{lineal}. Esto implica que 
-las frecuencias graves quedan con poca resolución y las frecuencias agudas con resolución excesiva, lo que no se corresponde con la estructura de la música ni con la percepción auditiva.
+En la Figura~\ref{fig:stft_vs_cqt} se puede apreciar este efecto para un mismo fragmento de audio (\textit{Prelude op.\ 28 no.\ 16, Chopin},
+interpretación original), que presenta una distribución bastante uniforme sobre el piano, con presencia tanto en el registro grave como en el
+agudo. La STFT lineal agrupa la energía armónica en muy pocas bandas graves, mientras que la CQT asigna un número
+constante de \foreign{english}{bins} por octava, distribuyendo la información de forma mucho más uniforme a lo largo del rango del
+instrumento. Esta diferencia visual resume la ventaja práctica de la CQT como representación de entrada para la transcripción
+automática de piano.
 
-En la Figura~\ref{fig:stft_vs_cqt} puede apreciarse cómo, para un mismo fragmento de audio (\textit{Prelude op28 no. 16, Chopin}, interpretación original) que presenta una distribución bastante uniforme sobre el piano con presencia en los registros grave y agudo, la STFT lineal agrupa la energía armónica en muy pocas bandas graves mientras que 
-la CQT asigna un número constante de \foreign{english}{bins} por octava, distribuyendo la información de forma mucho más uniforme a lo largo del rango del piano.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{figuras/linear.png}
-    \caption{STFT con escala lineal de frecuencia.}
-    \label{fig:stft_linear}
-  \end{subfigure}\hfill
-  \begin{subfigure}{0.48\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{figuras/log.png}
-    \caption{CQT con escala logarítmica tipo piano.}
-    \label{fig:cqt_log}
-  \end{subfigure}
-  \caption[Comparación de representaciones tiempo--frecuencia]
-  {Comparación entre un espectrograma STFT con eje de frecuencia lineal
-   y un espectrograma CQT con eje logarítmico. 
-   Imágenes generadas a partir de un mismo fragmento de audio.}
-  \label{fig:stft_vs_cqt}
-\end{figure}
-
-Es por esto que  se usa la \textbf{Transformada Q Constante} (\foreign{english}{Constant-Q Transform}, CQT), que distribuye las bandas de frecuencia en escala logarítmica, alineándose con la percepción musical y con la disposición de las teclas en el piano~\cite{wang2025mftfilm}.
 La CQT presenta los siguientes parámetros de configuración:
 \begin{itemize}
   \item Frecuencia mínima de $27{,}5~\mathrm{Hz}$ correspondiente a la tecla A0 (la tecla más grave de un piano estándar).
@@ -619,108 +606,268 @@ La CQT presenta los siguientes parámetros de configuración:
   \item Ventana de \textit{Hanning} y salto de trama (\foreign{english}{hop length}) de $20~\mathrm{ms}$.
 \end{itemize}
 
-El espectrograma CQT de dimensiones $(T \times 352)$, donde $T$ es el número de \foreign{english}{frames}, se remodela a $(C_0, T, F)$ con $C_0 = 4$ y $F = 88$. De esta forma, los 352 \foreign{english}{bins}
+El espectrograma CQT de dimensiones $(T \times 352)$, donde $T$ es el número de \foreign{english}{frames},
+se remodela a $(C_0, T, F)$ con $C_0 = 4$ y $F = 88$. De esta forma, los 352 \foreign{english}{bins}
 se distribuyen en cuatro grupos de 88 frecuencias, en correspondencia biunívoca con las 88 teclas
 del piano~\cite{wang2025mftfilm}. Esta representación constituye la entrada de la capa lineal
-inicial del modelo, que se somete a una serie de módulos FiLM que veremos a continuación.
+inicial del modelo.
 
-A modo de esquema general, en la Figura~\ref{fig:mftfilm_overview} se presenta un diagrama de la arquitectura del modelo MFT-FiLM que servirá de guía para los diguientes apartados. Este muestra el flujo de la información desde la entrada a la salida y la interacción que existe entre las tres ramas principales.
+\clearpage
+\begin{figure}[p]
+  \centering
+  \vspace*{\fill}
+  \includegraphics[width=\linewidth]{figuras/linear.png}\\[1.5em]
+  \includegraphics[width=\linewidth]{figuras/log.png}
+  \vspace*{\fill}
+  \caption[Comparación de representaciones tiempo--frecuencia]
+  {Comparación entre un espectrograma STFT con eje de frecuencia lineal y un espectrograma CQT con eje logarítmico, ambos generados a partir del mismo fragmento de audio de piano (\textit{Prelude op.\ 28 no.\ 16, Chopin}).
+  En la parte superior se muestra la STFT con escala lineal de frecuencia, donde la energía de los armónicos graves se concentra en muy pocas bandas y las frecuencias agudas aparecen con una resolución excesiva.
+  En la parte inferior se muestra la CQT con escala logarítmica, que asigna un número constante de \foreign{english}{bins} por octava y reparte la energía de forma mucho más uniforme a lo largo del teclado, alineando las bandas de frecuencia con las notas discretas del piano.
+  Esta figura ilustra visualmente la motivación principal para emplear la CQT como representación tiempo--frecuencia de entrada en el modelo MFT-FiLM, ya que proporciona una base más adecuada para el aprendizaje de patrones armónicos y la posterior estimación de activaciones de nota.}
+  \label{fig:stft_vs_cqt}
+\end{figure}
+
+\clearpage
+
+
+
+
+\section{Arquitectura general}
+\label{sec:mft_arch}
+
+El modelo MFT-FiLM aborda la transcripción automática de piano como un problema de 
+aprendizaje multitarea con cuatro salidas simultáneas: la activación de teclas a 
+nivel de \textit{frame}, los \textit{onsets}, los \textit{offsets} y la velocidad 
+de las notas~\cite{wang2025mftfilm}. La Figura~\ref{fig:mftfilm_overview} muestra 
+el esquema general del sistema, que sirve de referencia para la descripción del 
+flujo de información que se desarrolla en esta sección.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figuras/scheme_mft.png}
   \caption[Esquema general del modelo MFT-FiLM]%
-  {Esquema general del modelo MFT-FiLM para la transcripción multitarea de notas de piano, 
-  con las tres ramas de \foreign{english}{onset}, \foreign{english}{velocity} y 
-  \foreign{english}{frame+offset}, y el flujo de información a través de los bloques 
-  FT-FiLM e IFT-FiLM. Ilustración adaptada de~\cite{wang2025mftfilm}.}
+  {Esquema general del modelo MFT-FiLM para la transcripción multitarea de notas 
+  de piano, con las tres ramas de \foreign{english}{onset}, 
+  \foreign{english}{velocity} y \foreign{english}{frame+offset}, y el flujo de 
+  información a través de los bloques FT-FiLM e IFT-FiLM. Ilustración adaptada 
+  de~\cite{wang2025mftfilm}.}
   \label{fig:mftfilm_overview}
 \end{figure}
 
-El mecanismo \foreign{english}{Feature-Wise Linear Modulation} (FiLM) fue propuesto inicialmente por Perez \textit{et al.}~(2018)~\cite{perez2018film} para tareas de razonamiento visual. La idea central
-consiste en condicionar las activaciones de una red neuronal mediante una transformación afín por cada elemento, usando información de contexto generada por un módulo externo denominado
-\foreign{english}{FiLM Generator}. Definimos formalmente la operación como:
+
+La entrada común a las tres ramas es el espectrograma CQT descrito en la 
+Sección~\ref{sec:cqt}, con dimensiones $(C_0, T, F)$ donde $C_0 = 4$, $T$ es 
+el número de \foreign{english}{frames} y $F = 88$ corresponde a las teclas del 
+piano. Como se aprecia en la parte inferior de la 
+Figura~\ref{fig:mftfilm_overview}, este tensor se distribuye de forma idéntica 
+a las tres ramas a través de sus respectivas \textbf{capas de entrada} 
+(\foreign{english}{Input layer}), que proyectan los $C_0 = 4$ canales al espacio 
+de características interno de cada rama mediante una transformación lineal.
+
+
+El sistema se organiza en \textbf{tres ramas paralelas}, visibles en la 
+Figura~\ref{fig:mftfilm_overview}: la rama central de \foreign{english}{onset}, 
+la rama izquierda de \foreign{english}{velocity} y la rama derecha de 
+\foreign{english}{frame+offset}. Cada rama apila \textbf{cuatro bloques de 
+modulación} en cascada, representados como bloques apilados en el diagrama. 
+El tipo de bloque varía según la rama: la rama \foreign{english}{onset} emplea 
+bloques \textbf{FT-FiLM}, mientras que las ramas \foreign{english}{velocity} y 
+\foreign{english}{frame+offset} emplean bloques \textbf{IFT-FiLM}. Las 
+diferencias funcionales entre ambos tipos de bloque se detallan en la 
+Sección~\ref{sec:ftfilm_iftfilm}.
+
+Las dimensiones de los canales internos son $C = 64$ en las ramas 
+\foreign{english}{onset} y \foreign{english}{velocity}, y $C = 32$ en la rama 
+\foreign{english}{frame+offset}~\cite{wang2025mftfilm}. Esta asimetría deliberada 
+permite reducir el número total de parámetros sin penalizar la capacidad expresiva 
+de las ramas más discriminativas.
+
+
+La interacción entre ramas se produce mediante \textbf{tensores auxiliares}, 
+representados en la Figura~\ref{fig:mftfilm_overview} mediante flechas 
+discontinuas. En cada uno de los cuatro niveles de procesamiento, los tensores 
+intermedios generados por los bloques FT-FiLM de la rama \foreign{english}{onset} 
+se reenvían simultáneamente a los bloques IFT-FiLM de las ramas 
+\foreign{english}{velocity} y \foreign{english}{frame+offset}. Este flujo es 
+\textbf{estrictamente unidireccional}: la información viaja desde la rama 
+\foreign{english}{onset} hacia las otras dos, pero no en sentido contrario. 
+Esta decisión de diseño se justifica porque la señal de \foreign{english}{frame} 
+combina activaciones de notas sostenidas y de finales de nota, lo que podría 
+interferir negativamente en la detección precisa de inicios si se empleara como 
+entrada de la rama \foreign{english}{onset}~\cite{wang2025mftfilm}. El resultado 
+es un esquema con \textbf{cuatro niveles de interacción cruzada}, desde 
+representaciones espectrales de bajo nivel hasta semánticas de alto nivel.
+
+
+Cada rama dispone de una \textbf{capa de salida} (\foreign{english}{Output layer}), 
+visible en la parte superior de la Figura~\ref{fig:mftfilm_overview}, que adapta 
+las representaciones internas al objetivo de su subtarea. Las salidas del sistema 
+son tres \textit{piano rolls} de probabilidad: la rama \foreign{english}{onset} 
+produce un mapa de dimensiones $T \times 88$ con activación sigmoide; la rama 
+\foreign{english}{frame+offset} produce dos mapas de igual dimensión para la 
+activación de trama y el final de nota, también con activación sigmoide; y la rama 
+\foreign{english}{velocity} produce un mapa de $T \times 88 \times 128$ valores 
+sobre las 128 clases de velocidad MIDI, sin activación final. En conjunto, estas 
+tres salidas permiten reconstruir una transcripción completa en formato MIDI con 
+tono, duración y dinámica de cada nota. El diseño interno de las capas de salida 
+se describe junto con el resto de componentes en la 
+Sección~\ref{sec:ftfilm_iftfilm}.
+
+Los \textit{piano rolls} de probabilidad producidos por el modelo no constituyen 
+por sí mismos una transcripción musical: son mapas densos de activaciones continuas 
+sobre los que es necesario aplicar una etapa de postprocesado para obtener eventos 
+de nota discretos con tono, inicio, duración y velocidad.
+
+Durante la inferencia se aplica la estrategia de 
+\textbf{medio paso} (\foreign{english}{half stride})~\cite{toyama2023hftt}, que 
+procesa el audio en ventanas con un solapamiento del $50~\%$. Este solapamiento 
+permite promediar las predicciones en las regiones de transición entre ventanas, 
+mitigando los artefactos en bordes que aparecen al segmentar la señal.
+
+Finalmente, se aplica el \textbf{algoritmo de decodificación heurístico de 
+eventos de nota}~\cite{hawthorne2018onsetsframes}, que convierte los 
+\textit{piano rolls} umbralizados en una secuencia de eventos discretos.
+
+
+
+\section{Módulos FiLM, FT-FiLM e IFT-FiLM}
+\label{sec:ftfilm_iftfilm}
+
+Esta sección describe el mecanismo de modulación que constituye el núcleo 
+computacional del modelo y que da nombre al sistema. Se presentan en orden 
+creciente de complejidad: primero el mecanismo FiLM base, después el módulo 
+FT-FiLM que lo especializa para la extracción de información espectro-temporal, 
+y finalmente el módulo IFT-FiLM que lo extiende para la interacción entre ramas 
+de distintas tareas.
+
+\clearpage
+\begin{figure}[p]
+  \centering
+  \vspace*{\fill}
+  \includegraphics[width=0.95\linewidth]{figuras/FiLM.png}
+  \vspace*{\fill}
+  \caption[Arquitectura detallada de los módulos FT-FiLM e IFT-FiLM]%
+  {Arquitectura detallada de los módulos FT-FiLM e IFT-FiLM.
+  La señal de \textbf{entrada} (azul, parte inferior) tiene dimensiones $(C, T, F)$.
+  Una convolución 1D con kernel de tamaño $2F - 1 = 175$ opera sobre el eje de
+  frecuencia; a continuación, una convolución 1D con kernel de tamaño~1 expande
+  los canales de $C$ a $6C$ y el tensor resultante se divide en dos mitades de
+  $3C$ canales: los parámetros de escala $Z_\gamma$ y desplazamiento $Z_\beta$.
+  En el módulo \textbf{IFT-FiLM} (ramas \textit{velocity} y \textit{frame+offset}),
+  los tensores auxiliares $Z'_\gamma$ y $Z'_\beta$ procedentes de la rama
+  \textit{onset} (representados con borde discontinuo rojo) se concatenan a
+  los tensores locales, alcanzando $3C$ canales cada uno; en el módulo
+  \textbf{FT-FiLM} (rama \textit{onset}) esta concatenación no se produce.
+  Las convoluciones 1D reducen cada tensor de vuelta a $C$ canales, tras lo
+  cual dos \textbf{FG-LSTM} bidireccionales independientes de 32 unidades modelan
+  las dependencias temporales, produciendo los parámetros finales $\gamma$ y
+  $\beta$. La transformación afín $\gamma \odot x + \beta$ se aplica sobre la
+  entrada original mediante la conexión de salto (parte superior), generando la
+  \textbf{salida} modulada (azul, arriba) de dimensiones $(C, T, F)$. Los tensores
+  auxiliares se desconectan del grafo de cómputo (\texttt{detach}) antes de su
+  incorporación para evitar inestabilidades en la optimización.
+  Ilustración adaptada de~\cite{wang2025mftfilm}.}
+  \label{fig:film_detail}
+\end{figure}
+\clearpage
+
+El mecanismo \foreign{english}{Feature-Wise Linear Modulation} (FiLM) fue propuesto 
+inicialmente por Perez \textit{et al.}~(2018)~\cite{perez2018film} para tareas de 
+razonamiento visual. La idea central consiste en condicionar las activaciones de una 
+red neuronal mediante una transformación afín elemento a elemento, usando información 
+de contexto generada por un módulo externo denominado \foreign{english}{FiLM Generator}. 
+Definimos formalmente la operación como:
 
 \begin{equation}
   \text{FiLM}(x,\,\gamma,\,\beta) = \gamma \odot x + \beta
   \label{eq:film}
 \end{equation}
 
-\noindent donde $x$ es el mapa de características de entrada, $\gamma$ y $\beta$ son los parámetros de escala y desplazamiento generados dinámicamente, y $\odot$ es el producto
-de Hadamard (multiplicación elemento a elemento). El principal beneficio de este mecanismo respecto a la suma o concatenación directa de características es que $\gamma$ y $\beta$
-se adaptan en función del contexto en cada paso de inferencia, permitiendo al modelo ponderar y suprimir canales de forma dinámica en lugar de aplicar pesos fijos.
+\noindent donde $x$ es el mapa de características de entrada, $\gamma$ y $\beta$ son 
+los parámetros de escala y desplazamiento generados dinámicamente, y $\odot$ es el 
+producto de Hadamard (multiplicación elemento a elemento). El principal beneficio de 
+este mecanismo respecto a la suma o concatenación directa de características es que 
+$\gamma$ y $\beta$ se adaptan en función del contexto en cada paso de inferencia, 
+permitiendo al modelo ponderar y suprimir canales de forma dinámica en lugar de 
+aplicar pesos fijos.
 
-
-El módulo \textbf{FT-FiLM} (\foreign{english}{Frequency-Time FiLM}), implementado en la rama central (Figura~\ref{fig:mftfilm_overview}),  adapta el mecanismo descrito en la ecuación~(\ref{eq:film}) para extraer dependencias espectrales y temporales
-de forma jerárquica a partir del espectrograma CQT. Su operación se define como:
+El módulo \textbf{FT-FiLM} (\foreign{english}{Frequency-Time FiLM}) adapta el 
+mecanismo de la ecuación~(\ref{eq:film}) para extraer dependencias espectrales y 
+temporales de forma jerárquica a partir del espectrograma CQT. Es el tipo de bloque 
+empleado en la rama \foreign{english}{onset}, que opera exclusivamente sobre su propia 
+representación interna (auto-condicionamiento). Su operación se define como:
 
 \begin{equation}
   \text{FT-FiLM}(x) = f_{FT}(x) \odot x + h_{FT}(x)
   \label{eq:ftfilm}
 \end{equation}
 
-\noindent donde $f_{FT}$ y $h_{FT}$ son generadores de los parámetros de modulación $\gamma$ y $\beta$ respectivamente, extrayendo la información espectro-temporal en tres etapas secuenciales:
+\noindent donde $f_{FT}$ y $h_{FT}$ son los generadores de los parámetros de 
+modulación $\gamma$ y $\beta$ respectivamente. Como se puede seguir en la 
+Figura~\ref{fig:film_detail}, el generador opera en tres etapas secuenciales 
+sobre el mapa de entrada de dimensiones $(C, T, F)$. En primer lugar, el mapa de 
+características se convoluciona con un kernel 1D de tamaño $2F - 1 = 175$ sobre 
+el eje de frecuencia $F$, seguido de activación RELU. Este kernel se diseña con 
+una longitud igual al doble del eje completo menos uno para capturar 
+simultáneamente las relaciones armónicas entre todos los \foreign{english}{bins} 
+de frecuencia del piano, algo que las convoluciones de kernel reducido no pueden 
+lograr~\cite{wang2025mftfilm}.
 
-\paragraph{Convolución en el eje de frecuencia.}
-El mapa de características de entrada, de dimensiones $(C, T, F)$, se convoluciona con un kernel 1D de tamaño $2F - 1  = 175$ sobre el eje de frecuencia. Este kernel se diseña con una longitud igual al eje completo para capturar
-simultáneamente las relaciones armónicas entre todos los \foreign{english}{bins} de frecuencia del piano, algo que las convoluciones de kernel reducido no pueden lograr~\cite{wang2025mftfilm}.
+A continuación, los canales se expanden de $C$ a $6C$ mediante una convolución 1D 
+con kernel de tamaño~1. El tensor resultante se divide en dos mitades de $3C$ 
+canales, denominadas $Z_\gamma$ y $Z_\beta$, que posteriormente generarán los 
+parámetros de escala y desplazamiento de la modulación afín. Sobre cada una de 
+ellas se aplica una convolución 1D con kernel de tamaño~1 que reduce los canales 
+de vuelta a $C$. Los tensores resultantes se procesan entonces con dos redes 
+recurrentes \textbf{FG-LSTM} (\foreign{english}{Frequency-Grouped LSTM}) 
+bidireccionales independientes, cada una con 32 unidades ocultas, que capturan 
+las dependencias temporales entre \foreign{english}{frames} consecutivos a lo 
+largo del eje $T$. El uso de LSTM bidireccional incorpora tanto el contexto 
+pasado como el futuro en cada instante de la secuencia, produciendo los tensores 
+$\gamma$ y $\beta$ finales del generador.
 
-\paragraph{Transformación de canales.}
-Los canales se expanden de $C$ a $6C$ mediante una convolución 1D con kernel de tamaño~1, y el resultado se divide en dos tensores $z$ y $z'$, cada uno de $C$ canales, que servirán
-respectivamente como parámetros de escala y desplazamiento de la modulación afín.
-\paragraph{Modelado temporal con FG-LSTM.} Los tensores $z$ y $z'$ se procesan con dos redes recurrentes \textbf{FG-LSTM} (\foreign{english}{Frequency-Grouped LSTM}) bidireccionales independientes, cada una con 
-32 unidades ocultas, que capturan las dependencias temporales entre \foreign{english}{frames} consecutivos. El uso de LSTM bidireccional incorpora tanto el contexto pasado como el futuro en cada instante de la secuencia.
+Tras estas tres etapas, el mapa de entrada original $x$ se modula aplicando la 
+transformación afín de la ecuación~(\ref{eq:ftfilm}), con una capa de 
+\foreign{english}{dropout} de tasa $0{,}1$ antes de la modulación final 
+(visible en la Figura~\ref{fig:film_detail} como la conexión de salto que llega 
+a los operadores $\odot$ y $+$). El resultado es una representación 
+auto-condicionada que integra información espectral y temporal de forma jerárquica 
+y separada, lo que permite mantener un número de parámetros reducido. El generador 
+FiLM gestiona la información en tres dimensiones individuales (frecuencia, canal 
+y tiempo) de forma desacoplada, en lugar de operarlas conjuntamente como haría un 
+mecanismo de atención estándar.
 
-Tras estas tres etapas, el mapa de entrada original $x$ se modula aplicando la transformación afín de la ecuación~(\ref{eq:ftfilm}), con una capa de \foreign{english}{dropout} de tasa $0{,}1$ antes de la modulación final. El resultado es una representación auto-condicionada que integra información espectral y temporal de forma jerárquica y separada, lo que permite mantener un número de parámetros reducido.
-
-Con el objetivo de permitir la interacción entre ramas de distintas tareas, se crea el módulo IFT-FiLM (\foreign{english}{Inter-Task FT-FiLM}), que extiende el FT-FiLM. Lo formulamos como:
+Con el objetivo de permitir la interacción entre ramas de distintas tareas, el 
+módulo \textbf{IFT-FiLM} (\foreign{english}{Inter-Task FT-FiLM}) extiende el 
+FT-FiLM incorporando información auxiliar procedente de otra rama. Es el tipo de 
+bloque empleado en las ramas \foreign{english}{velocity} y 
+\foreign{english}{frame+offset}. Su operación se define como:
 
 \begin{equation}
   \text{IFT-FiLM}(x,\,x') = f_{IFT}(x,\,x') \odot x + h_{IFT}(x,\,x')
   \label{eq:iftfilm}
 \end{equation}
 
-\noindent donde $x$ es el mapa de características de la rama principal y $x'$ es la información auxiliar proveniente de otra rama. La diferencia estructural respecto al FT-FiLM
-reside en el paso de transformación de canales: los tensores $z$ y $z'$ generados por la rama auxiliar se concatenan a los de la rama principal a lo largo del eje de canales antes de reducirlos
-de vuelta a $C$ mediante una convolución 1D con kernel de tamaño~1.
+\noindent donde $x$ es el mapa de características de la rama principal y $x'$ es 
+la información auxiliar proveniente de la rama \foreign{english}{onset}. La 
+arquitectura del IFT-FiLM es idéntica a la del FT-FiLM salvo en el paso de 
+transformación de canales: como se aprecia en la Figura~\ref{fig:film_detail} 
+mediante los bloques con borde discontinuo rojo, los tensores $Z'_\gamma$ y 
+$Z'_\beta$ generados por la rama auxiliar se concatenan a los tensores locales 
+a lo largo del eje de canales, alcanzando $3C$ canales en cada tensor antes de 
+que la convolución 1D con kernel de tamaño~1 los reduzca de vuelta a $C$. 
+De este modo, la etapa de FG-LSTM y la modulación afín final operan sobre una 
+representación que ya ha fusionado la información de ambas ramas.
 
-Un detalle de implementación relevante es que los tensores auxiliares se \textbf{desconectan del grafo de cómputo} (\texttt{detach}) antes de ser incorporados~\cite{wang2025mftfilm}. Esta operación impide que el gradiente fluya de vuelta hacia la rama auxiliar a través de esta conexión,
-de forma que evitamos inestabilidades en la optimización cuando dos ramas se condicionan mutuamente. El módulo IFT-FiLM puede interpretarse como una red neuronal dinámica: los parámetros de modulación no son fijos,
-sino que se generan en cada paso en función de las entradas de ambas ramas, permitiendo que la red adapte su comportamiento de acuerdo con el contexto conjunto de las tareas involucradas.
-
-Ya con los módulos FiLM definidos, se puede describir el sistema completo de transcripción. Este está compuesto por \textbf{tres ramas paralelas}: \foreign{english}{onset}, \foreign{english}{velocity}
-y \foreign{english}{frame+offset}. Cada rama apila cuatro bloques FT-FiLM o IFT-FiLM en cascada~\cite{wang2025mftfilm}, y el flujo de información cruzada entre ramas sigue la siguiente lógica:
-\begin{itemize}
-  \item La \textbf{rama \foreign{english}{onset}} emplea bloques FT-FiLM puros (auto-condicionamiento), ya que detectar el comienzo de una nota es la subtarea más discriminativa del sistema.
-  \item En cada uno de los cuatro niveles, los tensores $z$ y $z'$ generados por la rama \foreign{english}{onset} se desconectan y se reenvían a las ramas \foreign{english}{velocity} y \foreign{english}{frame}, que los incorporan mediante bloques IFT-FiLM.
-  \item De esta forma, el diseño produce \textbf{cuatro niveles de interacción cruzada}, desde representaciones de bajo nivel espectral hasta semánticas de alto nivel, enriqueciendo progresivamente las representaciones de cada subtarea.
-\end{itemize}
-
-El flujo unidireccional de información (onset $\rightarrow$ velocity, onset $\rightarrow$ frame) está justificado por el hecho de que la señal de \foreign{english}{frame} combina información de notas sostenidas y de finales, lo que podría interferir de forma negativa en la detección precisa de inicios si se utilizara como entrada de la rama \foreign{english}{onset}~\cite{wang2025mftfilm}.
-Las dimensiones de los canales son $C = 64$ en las ramas \foreign{english}{onset} y \foreign{english}{velocity}, y $C = 32$ en la rama \foreign{english}{frame+offset}, lo que fomenta la minimización de los parámetros del modelo.
-
-Cada rama dispone de una capa de salida que ajusta el número de canales al objetivo de la subtarea correspondiente. La capa sigue el esquema: expansión a $2C$ canales,
-seguida de una capa de \foreign{english}{dropout} con tasa $0{,}1$, activación GELU (que actúa como una versión suavizada de una ReLU), y compresión al número de canales objetivo~\cite{wang2025mftfilm}.
-La Tabla~\ref{tab:salidas} resume las configuraciones de salida de cada rama.
-
-\begin{table}[H]
-  \centering
-  \caption{Configuración de las capas de salida de cada rama del sistema MFT-FiLM.}
-  \label{tab:salidas}
-  \begin{tabular}{lccc}
-    \hline
-    \textbf{Rama} & \textbf{Canales de salida} & \textbf{Activación} & \textbf{Dimensión del piano roll} \\
-    \hline
-    \textit{Onset}        & 1   & Sigmoide & $T \times 88$ \\
-    \textit{Frame+Offset} & 2   & Sigmoide & $T \times 88\,(\times2)$ \\
-    \textit{Velocity}     & 128 & ---      & $T \times 88 \times 128$ \\
-    \hline
-  \end{tabular}
-\end{table}
-
-
-Por último, cabe mencionar que durante la inferencia se aplica una estrategia de \textbf{medio paso} (\foreign{english}{half stride}), que procesa el audio en ventanas con un solapamiento del $50~\%$ para mitigar los artefactos en los bordes de cada bloque.
-El algoritmo de decodificación heurístico convierte los piano rolls de probabilidad en eventos de nota discretos (tono, inicio, final, velocidad), con una tolerancia de $50~ms$ en los inicios; y del máximo entre $50~ms$ y el  $20~\%$ de la duración en los finales.
+Un detalle de implementación relevante es que los tensores auxiliares $Z'_\gamma$ y 
+$Z'_\beta$ se \textbf{desconectan del grafo de cómputo} (\texttt{detach}) antes de 
+ser incorporados~\cite{wang2025mftfilm}. Esta operación impide que el gradiente 
+fluya de vuelta hacia la rama \foreign{english}{onset} a través de esta conexión, 
+evitando inestabilidades en la optimización. El módulo IFT-FiLM puede interpretarse 
+como una red neuronal dinámica: los parámetros de modulación no son fijos,sino que 
+se generan en cada paso en función de las entradas de ambas ramas, permitiendo que 
+la red adapte su comportamiento de acuerdo con el contexto conjunto de las tareas 
+involucradas~\cite{wang2025mftfilm}.
 
 \section{Función de pérdida y eficiencia}
 \label{sec:mft_loss_eff}
@@ -759,181 +906,6 @@ del estado del arte. En términos de operaciones de multiplicación-acumulación
 Esta eficiencia no sacrifica capacidad expresiva gracias al diseño jerárquico del generador FiLM, que desacopla el procesamiento en los ejes de frecuencia, canal y tiempo en lugar de operarlos conjuntamente. La separación de estas dimensiones permite reutilizar módulos ligeros (convoluciones 1D y LSTMs de baja dimensionalidad) en lugar de recurrir a mecanismos
 de atención de complejidad cuadrática, sin renunciar a la capacidad de capturar dependencias espectrales y temporales de largo alcance.
 
-\section{Configuración del experimento}
-\label{sec:mft_config}
-El entrenamiento del modelo MFT-FiLM se llevó a cabo en el clúster de cómputo de alto rendimiento \textbf{tensor}, que pertenece al Departamento de Sistemas Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia. Este sistema está formado por un único nodo
-equipado con \textbf{$503\,GB$ de memoria RAM} y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S} con $48\,GB$ de memoria GDDR6 ECC cada una. Las GPUs L40S son tarjetas de la familia \foreign{english}{Ada Lovelace}, orientadas específicamente a cargas de trabajo de inteligencia artificial sostenidas en entornos de servidor.
-A diferencia de las tarjetas de consumo de la misma generación, estas incorporan memoria ECC (\textit{Error-Correcting Code}), que detecta y corrige errores de bit durante el cómputo, algo que resulta realmente útil en trabajos de larga duración como el entrenamiento de redes neuronales.
-
-El hardware empleado en el artículo original consistía en dos tarjetas NVIDIA GeForce RTX 4090 de $24\,GB$ de VRAM cada una~\cite{wang2025mftfilm}. La L40S cuenta individualmente con $48\,GB$, lo que permitió alojar el modelo con lotes de tamaño deseado sin problemas.
-
-El acceso se realiza mediante SSH a través del nodo de entrada \texttt{tensor.dsic.upv.es}, autenticado con credenciales institucionales. El sistema de gestión de trabajos es \textbf{SLURM} (\textit{Simple Linux Utility for Resource Management}), que organiza la ejecución de trabajos mediante
-dos colas principales: \texttt{docencia}, para trabajos de duración inferior a 24 horas; y \texttt{long}, para trabajos de hasta 72 horas. Dada una duración de entrenamiento estimada por los autores de 43 horas, fue necesario usar la cola \texttt{long}.
-
-
-Todas las dependencias se encapsularon en un entorno virtual de Python para garantizar la reproducibilidad del experimento y para aislar las versiones de las librerías del sistema global del clúster. El uso de entornos virtuales es una práctica estándar en proyectos de aprendizaje automático, ya que distintos proyectos pueden requerir versiones incompatibles de las mismas librerías.
-El proceso de creación fue el siguiente:
-\begin{enumerate}
-  \item Creación del entorno virtual con el intérprete Python 3.12 disponible en el clúster:
-\begin{verbatim}
-mkdir -p ~/venv
-python3 -m venv ~/venv/MFT-FiLM
-source ~/venv/MFT-FiLM/bin/activate
-\end{verbatim}
-
-  \item Instalación de PyTorch con soporte para CUDA 12.6, versión de controladores disponible
-  en \texttt{tensor}:
-\begin{verbatim}
-pip install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu126
-\end{verbatim}
-
-  \item Instalación del resto de dependencias del repositorio:
-\begin{verbatim}
-pip install prettymidi mireval librosa==0.9.2 \
-    numpy scipy joblib tensorboard
-\end{verbatim}
-\end{enumerate}
-
-Después de preparar el entorno, se clonó el repositorio público desde el GitHub oficial~\cite{wang2025mftfilm}, y se creó un enlace simbólico para trabajar con MAESTRO previamente descargado.
-Durante la realización de pruebas para comprobar el funcionamiento del código original encontramos ciertas dificultades. En los siguientes apartados veremos en detalle los problemas técnicos más relevantes y las soluciones adoptadas para resolverlos.
-
-\paragraph{Problema 1: Obsolescencia de dependencias.}
-La reproducibilidad en aprendizaje automático aplicado a la recuperación de información musical es altamente sensible a las versiones de las librerías de procesamiento de señal. Para garantizar que las matrices de los espectrogramas CQT generados coincidieran
-con las reportadas en el artículo original, fue estrictamente necesario usar la versión \textbf{0.9.2} de la librería \texttt{librosa}. Las versiones más recientes (a partir de la 0.10) introdujeron modificaciones en el cómputo del \textit{padding} interno del CQT, lo que produce una diferencia de uno o dos \textit{frames} entre el tensor del audio y el tensor de etiquetas MIDI generado a partir del mismo archivo.
-Dado que el código asume una correspondencia exacta entre ambas dimensiones temporales, este desajuste provocaba un error fatal durante la inicialización del \textit{DataLoader}.
-
-El clúster \texttt{tensor} opera con un intérprete \textbf{Python~3.12}. A partir de esta versión, las herramientas de construcción base del ecosistema Python (\texttt{setuptools}~v70+) eliminaron por completo el módulo \texttt{pkg\_resources}, considerado
-obsoleto. Sin embargo, la versión 0.9.2 de \texttt{librosa} posee una dependencia rígida en dicho módulo para localizar e instanciar sus archivos internos de configuración. Esto generó
-un bloqueo de entorno: el modelo requería la librería heredada para mantener la integridad dimensional de los datos, pero el intérprete moderno de Python impedía su carga, abortando el
-proceso de entrenamiento antes incluso de la fase de carga de datos.
-
-Para solventarlo sin alterar la versión global de Python de \texttt{tensor} y sin comprometer la versión de \texttt{librosa}, se aplicó una degradación forzada de las herramientas de construcción del entorno virtual:
-\begin{verbatim}
-pip install "setuptools==69.5.1" --force-reinstall
-\end{verbatim}
-
-La versión 69.5.1 es la última versión de transición que conserva el módulo necesario \texttt{pkg\_resources} íntegro en el espacio de usuario. Esta acción creó un puente de
-compatibilidad que permitió ejecutar código de procesamiento de señal de generación anterior sobre un intérprete Python de última generación, sin necesidad de modificar ningún archivo del
-código fuente del repositorio ni alterar el entorno global del sistema.
-
-\paragraph{Problema 2: Incompatibilidad de la API de PyTorch y corrupción de la caché.}
-Como veremos posteriormente, el entrenamiento requiere una fase previa de \textbf{preprocesamiento masivo paralelo} para extraer todos los espectrogramas y los \textit{piano rolls} de las etiquetas MIDI, almacenándolos en archivos binarios \texttt{.pth} en disco (caché).
-Tras finalizar este proceso, la clase constructora del \textit{dataset} (\texttt{CacheDataset}) debía cargar dichos tensores en memoria para ejecutar el bucle de entrenamiento del modelo.
-
-Al iniciarse la fase de entrenamiento, el código produjo una excepción crítica:
-
-\begin{verbatim}
-AssertionError: Size mismatch between tensors
-\end{verbatim}
-
-En tareas de recuperación de información musical, este tipo de error suele indicar un desajuste en el número de \textit{frames} entre el espectrograma de audio y la correspondiente matriz de etiquetas (por ejemplo, un audio que genera 1.000 \textit{frames} y cuyo \textit{piano roll}
-genera 1.001 debido a redondeos en aritmética de coma flotante). Sin embargo, tras analizar en profundidad el código fuente de los autores, se identificó que la causa era un \textbf{defecto de diseño arquitectónico} expuesto por la actualización de PyTorch. 
-
-Los autores definieron la clase \texttt{CacheDataset} heredando de \texttt{TensorDataset}.
-No obstante, en su método inicializador, invocaban a la clase padre sin pasar ningún tensor
-(\texttt{super(CacheDataset, self).\_\_init\_\_()}), ya que gestionaban la carga en memoria de
-forma personalizada. Las versiones antiguas de PyTorch (serie 1.x) aceptaban esta
-inicialización vacía de forma silenciosa. Las versiones modernas (serie 2.x, empleadas en
-\texttt{tensor}) incorporan validaciones internas que asumen que la ausencia de tensores en la
-inicialización implica un desajuste dimensional, lanzando la excepción de forma sistemática.
-Adicionalmente, las interrupciones abruptas producidas durante los primeros intentos
-corrompieron parcialmente los archivos \texttt{.pth} de caché generados, dejando el sistema
-en un estado irrecuperable que exigió intervención manual.
-
-Para solventar los problemas, por un lado se modificó la declaración de herencia de la clase \texttt{CacheDataset} en el archivo \texttt{data/dataload.py}, sustituyendo la
-  herencia de \texttt{TensorDataset} por la clase base estándar \texttt{torch.utils.data.Dataset}:
-
-\begin{verbatim}
-# Antes:
-class CacheDataset(TensorDataset):
-    def __init__(self, ...):
-        super(CacheDataset, self).__init__()
-        ...
-
-# Después:
-class CacheDataset(torch.utils.data.Dataset):
-    def __init__(self, ...):
-        super(CacheDataset, self).__init__()
-        ...
-\end{verbatim}
-
-Al heredar de la clase base genérica, se evitó la validación estricta de tensores en la
-inicialización, delegando la responsabilidad de la gestión dimensional a los métodos
-\texttt{\_\_getitem\_\_} y \texttt{\_\_len\_\_}, que ya estaban correctamente implementados
-por los autores. Por otro lado, se eliminó completamente el árbol de directorios de caché corrupta y se regeneraron los archivos desde cero.
-
-
-Tras solucionar todos los problemas e incompatibilidades, se procedió con la configuración de parámetros. El archivo central de configuración es \texttt{constant\_macro.py}, que controla todos los hiperparámetros y rutas del sistema. Para replicar las condiciones descritas en el artículo original, se ajustaron los parámetros que se muestran en la Tabla~\ref{tab:config}~\cite{wang2025mftfilm}.
-
-\begin{table}[h]
-  \centering
-  \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py} para el entrenamiento de MFT-FILM.}
-  \label{tab:config}
-  \begin{tabular}{lll}
-    \hline
-    \textbf{Parámetro} & \textbf{Valor} & \textbf{Descripción} \\
-    \hline
-    \texttt{EPOCH\_RANGE}     & 60           & Número total de épocas de entrenamiento \\
-    \texttt{BATCH\_SIZE}      & 10           & Número de muestras por lote \\
-    \texttt{LEARNING\_RATE}   & 0,0005       & Tasa de aprendizaje del optimizador \\
-    \texttt{DATASET\_NAME}    & \texttt{maestro-v3.0.0} & Versión del \textit{dataset} \\
-    \texttt{DATASET\_PATH}    & ruta absoluta & Directorio raíz de los datos \\
-    \texttt{MODEL\_PATH}      & ruta absoluta & Directorio de salida del modelo \\
-    \texttt{MODEL\_NAME}      & \texttt{MTFiLM}   & Identificador del modelo \\
-    \texttt{SCHEDULE\_IDX}    & \texttt{2x}       & Objetivo: transcripción de notas \\
-    \hline
-  \end{tabular}
-\end{table}
-
-A continuación se analiza el significado y se justifica la elección de los parámetros más relevantes.
-
-\paragraph{Optimizador y tasa de aprendizaje.}
-El optimizador empleado es \textbf{Adam} (\textit{Adaptive Moment Estimation}), considerado estándar en el entrenamiento de redes para tareas de procesado de señal. Este optimizador mantiene para cada parámetro del modelo, 
-estimaciones del primer momento (media exponencial de los gradientes pasados, $m_t$) y del segundo momento (media exponencial de los cuadrados de los gradientes, $v_t$), actualizando cada parámetro $\theta$ según:
-
-\begin{equation}
-  \theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
-  \label{eq:adam}
-\end{equation}
-
-\noindent donde $\hat{m}_t$ y $\hat{v}_t$ son las estimaciones corregidas por sesgo de ambos
-momentos, $\alpha$ es la tasa de aprendizaje global, y $\epsilon$ es un término de estabilidad
-numérica. La principal ventaja de Adam sobre el descenso de gradiente
-estocástico clásico (SGD) es que la tasa de aprendizaje efectiva de cada parámetro se adapta
-automáticamente en función de la magnitud histórica de sus gradientes. Los parámetros que
-reciben gradientes de alta magnitud con frecuentemente se actualizan menos veces, mientras
-que aquellos con gradientes escasos o de baja magnitud se actualizan más veces. Este comportamiento es
-especialmente beneficioso en arquitecturas multitarea como el MFT-FiLM, donde diferentes ramas
-de la red pueden tener gradientes de magnitud muy dispar.
-
-La tasa de aprendizaje global se fijó en $\alpha = 5 \times 10^{-4}$, valor utilizado por los autores originales~\cite{wang2025mftfilm}.
-
-\paragraph{Tamaño de lote.}
-
-El \textbf{tamaño de lote} (\textit{batch size}) de 10 espectrogramas es el valor reportado en el artículo~\cite{wang2025mftfilm}, y difiere del valor predeterminado del repositorio (4
-muestras). El \textit{batch size} es relevante desde dos puntos de vista: la estabilidad del gradiente y el hardware.
-
-Desde el punto de vista de la optimización, valores elevados producen estimaciones del gradiente con menor varianza, lo que se traduce en actualizaciones de parámetros más estables y convergencia más suave.
-Lotes excesivamente grandes pueden conducir a mínimos agudos con peor capacidad para generalizar. El valor de 10 representa un equilibrio pragmático entre ambos extremos para este dominio.
-
-Desde el punto de vista del hardware, cada muestra de entrenamiento es un tensor de
-espectrograma de dimensiones $(4, T, 88)$, donde $T = 400$ \textit{frames} (correspondiente
-a una ventana de 8 segundos con \textit{hop} de 20\,ms). Un lote de 10 de estas muestras ocupa
-aproximadamente 40\,GB de la VRAM de la GPU L40S, situando la utilización de memoria cerca del
-límite físico de 48\,GB disponibles. Lotes de mayor tamaño habrían requerido el uso de más gráficas para alojar el modelo durante el entrenamiento.
-
-\paragraph{Épocas y guardado.}
-
-El número de \textbf{épocas} se fijó en 60, conforme a la configuración descrita en el artículo
-para el entrenamiento sobre MAESTRO~\cite{wang2025mftfilm}. Una época representa una pasada
-completa del optimizador sobre todos los ejemplos del conjunto de entrenamiento; con $7\,186$
-lotes de 10 muestras, cada época implica $7\,186$ actualizaciones de los parámetros del modelo.
-El número de épocas determina la cantidad total de actualizaciones de gradiente y, por tanto,
-el grado de especialización del modelo sobre el conjunto de entrenamiento.
-
-Para minimizar el riesgo de sobreajuste, se implementó una estrategia de \textbf{guardado dinámico por validación}. Al principio (10 épocas), la evaluación del modelo sobre el conjunto de validación se realiza cada 5 épocas. Una vez supera un umbral mínimo de convergencia, la validación se realiza cada época, guardando un \textit{checkpoint} únicamente cuando se observa una mejora respecto al mejor valor histórico de pérdida en validación. 
-De esta forma, el modelo final seleccionado no es necesariamente el de la última época completada, sino el que mejor se comportó en validación.
 
 \section{Preproceso y entrenamiento}
 \label{sec:mft_preprocess}
@@ -950,7 +922,8 @@ sistemáticamente más corto que el audio real.
 El proceso se paraleliza mediante la librería \texttt{joblib}, y el resultado de la ejecución es un conjunto de archivos binarios que serán reutilizados directamente en todos los entrenamientos subsiguientes, eliminando el coste de reprocesamiento.
 
 Dado que el tiempo estimado de entrenamiento excedía ampliamente el límite de 24 horas de la cola \texttt{docencia}, el trabajo se sometió a la cola \texttt{long} de SLURM.
-Se solicitó una única GPU L40S, ya que, como hemos visto, es suficiente para alojar el modelo con el \textit{batch size} seleccionado.
+Se solicitó una única GPU L40S, ya que, como hemos visto, es suficiente para alojar el modelo con el \textit{batch size} seleccionado (véase el Anexo~\ref{anx:mft_config} para los detalles completos de
+configuración del entorno).
 
 Durante el entrenamiento se observó un patrón de utilización de la GPU con oscilaciones periódicas de uso entre el 0\,\% y el 100\,\%, en lugar de un valor cercano al máximo continuado.
 Este fenómeno, conocido como \textit{GPU starvation} o cuello de botella
@@ -1030,7 +1003,7 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
 
 \begin{table}[H]
   \centering
-  \caption[Resultados de la precisión de MFT-FiLM sobre MAESTRO v3.0.0]{%
+  \caption[Resultados de la precisión (\textit{P}) de MFT-FiLM sobre MAESTRO v3.0.0]{%
   Resultados de precisión de transcripción de notas sobre MAESTRO v3.0.0.
   Se muestran el número de parámetros y las métricas de precisión a nivel de trama
   (\textit{Frame}) y de nota (\textit{Note Onset}, \textit{Note w/ Offset},
@@ -1041,10 +1014,10 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
     \hline
     \textbf{Modelo} &
     \textbf{Parámetros} &
-    \textbf{Frame Precisión} &
-    \textbf{Onset Precisión} &
-    \textbf{Onset+Off. Precisión} &
-    \textbf{Onset+Off.+Vel. Precisión} \\
+    \textbf{Frame P} &
+    \textbf{Onset P} &
+    \textbf{Onset+Off. P} &
+    \textbf{Onset+Off.+Vel. P} \\
     \hline
     Transformer~\cite{hawthorne2021seq2seq}        & 54\,M   & ---   & 98.61 & 86.19 & 84.95 \\
     SemiCRF~\cite{yan2021semicrf1}            & 9\,M    & 93.79 & 98.69 & 90.79 & 89.78 \\
@@ -1061,7 +1034,7 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
 
 \begin{table}[H]
   \centering
-  \caption[Resultados del \textit{recall} de MFT-FiLM sobre MAESTRO v3.0.0]{%
+  \caption[Resultados del \textit{recall} (\textit{R}) de MFT-FiLM sobre MAESTRO v3.0.0]{%
   Resultados del \textit{recall} en transcripción de notas sobre MAESTRO v3.0.0.
   Se muestran el número de parámetros y las métricas de \textit{recall} a nivel de trama
   (\textit{Frame}) y de nota (\textit{Note Onset}, \textit{Note w/ Offset},
@@ -1072,10 +1045,10 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
     \hline
     \textbf{Modelo} &
     \textbf{Parámetros} &
-    \textbf{Frame Recall} &
-    \textbf{Onset Recall} &
-    \textbf{Onset+Off. Recall} &
-    \textbf{Onset+Off.+Vel. Recall} \\
+    \textbf{Frame R} &
+    \textbf{Onset R} &
+    \textbf{Onset+Off. R} &
+    \textbf{Onset+Off.+Vel. R} \\
     \hline
     Transformer~\cite{hawthorne2021seq2seq}        & 54\,M   & ---   & 93.60 & 81.86 & 80.70 \\
     SemiCRF~\cite{yan2021semicrf1}            & 9\,M    & 88.36 & 93.96 & 86.46 & 85.51 \\
@@ -1112,48 +1085,47 @@ de aprendizaje de la arquitectura MFT-FiLM. Con este propósito, se ha
 monitorizado la evolución de la función de pérdida (\textit{loss}) y de las 
 métricas de validación a lo largo de las 30 épocas completadas.
 
-La Figura~\ref{fig:loss_convergence} ilustra la dinámica de minimización del 
-error, presentando de forma paralela la reducción de la pérdida intra-época 
-(evaluada durante los primeros lotes) y la evolución macroscópica a lo largo 
-de la totalidad del entrenamiento.
+Como se aprecia en la Figura~\ref{fig:loss_epoch1}, el modelo exhibe una
+convergencia inicial excepcionalmente rápida. Durante las primeras iteraciones
+de la primera época, la función de pérdida experimenta un descenso abrupto
+seguido de una estabilización progresiva, lo que sugiere que el mecanismo FiLM
+facilita una adaptación veloz a las representaciones espectro-temporales de la
+señal de audio.
 
 \begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figuras/loss_primera_epoca_sci.png}
-        \caption{Convergencia en la época 1}
-        \label{fig:loss_epoch1}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figuras/loss_train_val_por_epoca_sci.png}
-        \caption{Pérdida global (30 épocas)}
-        \label{fig:loss_all}
-    \end{subfigure}
-    \caption[Evolución de la pérdida (\textit{loss}) del modelo MFT-FiLM]{%
-    Evolución de la pérdida (\textit{loss}) del modelo MFT-FiLM. 
-    Izquierda: rápida convergencia durante las iteraciones iniciales. 
-    Derecha: pérdida de entrenamiento promedio frente a la pérdida global de 
-    validación (calculada como la suma de los errores de las cuatro subtareas).}
-    \label{fig:loss_convergence}
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/loss_primera_epoca_sci.png}
+  \caption[Convergencia de la pérdida durante la primera época]{%
+  Evolución de la función de pérdida lote a lote durante la primera época de
+  entrenamiento del modelo MFT-FiLM. Se aprecia un descenso abrupto en las
+  primeras iteraciones seguido de una estabilización progresiva, lo que indica
+  que el mecanismo FiLM facilita una adaptación inicial muy rápida a las
+  representaciones espectro-temporales de la señal de audio.}
+  \label{fig:loss_epoch1}
 \end{figure}
 
-Como se aprecia en la Figura~\ref{fig:loss_epoch1}, el modelo exhibe una 
-convergencia inicial excepcionalmente rápida. Durante las primeras iteraciones 
-de la primera época, la función de pérdida experimenta un descenso abrupto, 
-alcanzando una estabilización prematura. Esta elevada eficiencia en la 
-optimización inicial sugiere que el mecanismo de enrutamiento basado en FiLM 
-(\textit{Feature-wise Linear Modulation}) facilita una adaptación veloz a las 
-representaciones espectro-temporales de la señal de audio. Al analizar la 
-tendencia macroscópica (Figura~\ref{fig:loss_all}), se observa que la pérdida 
-de entrenamiento continúa decreciendo de forma asintótica, reduciéndose de 
-$0{,}277$ en la época 1 a $0{,}063$ en la época 30. La métrica de 
-validación acompaña esta tendencia de descenso progresivo sin mostrar 
-divergencias, lo cual permite descartar la presencia de sobreajuste 
+Al analizar la tendencia macroscópica en la Figura~\ref{fig:loss_all}, se
+observa que la pérdida de entrenamiento continúa decreciendo de forma
+asintótica, reduciéndose de $0{,}277$ en la época~1 a $0{,}063$ en la
+época~30. La pérdida de validación acompaña esta tendencia sin mostrar
+divergencias, lo cual permite descartar la presencia de sobreajuste
 (\textit{overfitting}) en esta etapa del entrenamiento.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/loss_train_val_por_epoca_sci.png}
+  \caption[Evolución de la pérdida de entrenamiento y validación por época]{%
+  Pérdida promedio de entrenamiento frente a pérdida de validación a lo largo
+  de las 30 épocas completadas (calculada como la suma de los errores de las
+  cuatro subtareas: \textit{onset}, \textit{frame}, \textit{offset} y
+  \textit{velocity}). La pérdida de entrenamiento decrece de forma asintótica
+  de $0{,}277$ en la época~1 a $0{,}063$ en la época~30, y la pérdida de
+  validación acompaña esta tendencia sin divergir, descartando la presencia de
+  sobreajuste en esta etapa del entrenamiento.}
+  \label{fig:loss_all}
+\end{figure}
+
+\clearpage
 
 Continuamos analizando métricas en validación. La Figura~\ref{fig:f1_evolution} desglosa la evolución de la métrica $F_1$ sobre 
 el conjunto de validación para las cuatro subtareas evaluadas. El aprendizaje 
@@ -1167,7 +1139,7 @@ por encima del $85\%$ hacia la culminación del entrenamiento.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{figuras/f1_validacion_por_epoca_sci.png}
+    \includegraphics[width=0.92\textwidth]{figuras/f1_validacion_por_epoca_sci.png}
     \caption[Evolución de la métrica $F_1$ en el conjunto de validación]{%
     Evolución de la métrica $F_1$ en el conjunto de validación para 
     la estimación de \textit{Frame}, \textit{Onset}, \textit{Offset} y 
@@ -1181,32 +1153,30 @@ básicos. La Figura~\ref{fig:prec_rec_comparison} presenta en paralelo los nivel
 de precisión y \textit{recall} obtenidos durante la fase de 
 validación.
 \begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figuras/precision_validacion_por_epoca_sci.png}
-        \caption{Precisión en validación}
-        \label{fig:prec_val}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figuras/recall_validacion_por_epoca_sci.png}
-        \caption{\textit{Recall} en validación}
-        \label{fig:rec_val}
-    \end{subfigure}
-    \caption[Comparativa entre los niveles de precisión y 
-    \textit{recall} en el conjunto de validación] {% 
-    Comparativa entre los niveles de precisión y 
-    \textit{recall} en el conjunto de validación. Destaca la sistemática superioridad de la precisión frente al \textit{recall} .}
-    \label{fig:prec_rec_comparison}
+  \centering
+  \includegraphics[width=0.95\textwidth]{figuras/precision_validacion_por_epoca_sci.png}\\[1em]
+  \includegraphics[width=0.95\textwidth]{figuras/recall_validacion_por_epoca_sci.png}
+  \caption[Precisión y \textit{recall} en el conjunto de validación]{%
+  Evolución de la precisión (arriba) y del \textit{recall} (abajo) en el
+  conjunto de validación a lo largo de las 30 épocas de entrenamiento,
+  desglosadas por subtarea: \textit{Frame}, \textit{Onset}, \textit{Offset} y
+  \textit{Velocity}. La precisión se mantiene de forma sistemática por encima
+  del \textit{recall} en todas las tareas y épocas, reflejando un comportamiento
+  conservador del modelo: ante la incertidumbre, el sistema prefiere omitir una
+  nota a activar una inexistente. En la época~30, la precisión de \textit{Onset}
+  alcanza valores cuasi perfectos ($>99{,}5\%$), mientras que el
+  \textit{recall} de la misma subtarea se estabiliza en torno al $96{,}5\%$.
+  Esta divergencia indica que los errores residuales provienen principalmente
+  de notas omitidas en pasajes de alta densidad polifónica, y no de activaciones
+  falsas.}
+  \label{fig:prec_rec_comparison}
 \end{figure}
 
 El contraste analítico entre ambas gráficas evidencia que el modelo MFT-FiLM 
 presenta un comportamiento marcadamente \textbf{conservador}. A lo largo de 
 todas las épocas y tareas evaluadas, los niveles de precisión 
-(Figura~\ref{fig:prec_val}) se mantienen de forma sistemática por encima de los 
-niveles de \textit{recall} (Figura~\ref{fig:rec_val}). A modo de ejemplo, en 
+se mantienen de forma sistemática por encima de los 
+niveles de \textit{recall} (Figura~\ref{fig:prec_rec_comparison}). A modo de ejemplo, en 
 la época 30, la precisión para la detección de \textit{Note Onset} alcanza 
 valores cuasi perfectos ($>99{,}5\%$), mientras que la exhaustividad (\textit{recall}) se 
 estabiliza en torno al $96{,}5\%$.
@@ -1982,30 +1952,134 @@ G.~Loaiza-Ganem y J.~P. Cunningham.
 
 \APPENDIX
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                         LA CONFIGURACIO DEL SISTEMA                         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Configuración del experimento MFT-FiLM}
+\label{anx:mft_config}
 
-\chapter{Configuració del sistema}
+El entrenamiento del modelo MFT-FiLM se llevó a cabo en el clúster de cómputo
+de alto rendimiento \textbf{tensor}, perteneciente al Departamento de Sistemas
+Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia.
+Este sistema está formado por un único nodo equipado con \textbf{$503\,\text{GB}$
+de memoria RAM} y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S}
+con $48\,\text{GB}$ de memoria GDDR6 ECC cada una. Las GPUs L40S pertenecen a
+la familia \foreign{english}{Ada Lovelace}, orientadas específicamente a cargas
+de trabajo de inteligencia artificial sostenidas en entornos de servidor.
+A diferencia de las tarjetas de consumo de la misma generación, incorporan
+memoria ECC (\textit{Error-Correcting Code}), que detecta y corrige errores de
+bit durante el cómputo, algo especialmente útil en trabajos de larga duración
+como el entrenamiento de redes neuronales. El hardware empleado en el artículo
+original consistía en dos tarjetas NVIDIA GeForce RTX 4090 de $24\,\text{GB}$
+de VRAM cada una~\cite{wang2025mftfilm}; la L40S cuenta individualmente con
+$48\,\text{GB}$, lo que permitió alojar el modelo con lotes del tamaño
+requerido sin restricciones.
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+El acceso al clúster se realiza mediante SSH a través del nodo de entrada \\
+\texttt{tensor.dsic.upv.es}, autenticado con credenciales institucionales.
+El sistema de gestión de trabajos es \textbf{SLURM}
+(\textit{Simple Linux Utility for Resource Management}), que organiza la
+ejecución mediante dos colas principales: \texttt{docencia}, para trabajos de
+duración inferior a 24 horas, y \texttt{long}, para trabajos de hasta 72 horas.
+Dada la duración estimada de entrenamiento de 43 horas reportada por los
+autores~\cite{wang2025mftfilm}, fue necesario usar la cola \texttt{long}.
 
-\section{Fase d'inicialització}
+Todas las dependencias se encapsularon en un entorno virtual de Python para
+garantizar la reproducibilidad del experimento y aislar las versiones de las
+librerías del sistema global del clúster. El proceso de creación fue el
+siguiente:
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+\begin{enumerate}
+  \item Creación del entorno virtual con el intérprete Python~3.12 disponible
+  en el clúster:
+\begin{verbatim}
+mkdir -p ~/venv
+python3 -m venv ~/venv/MFT-FiLM
+source ~/venv/MFT-FiLM/bin/activate
+\end{verbatim}
 
-\section{Identificació de dispositius}
+  \item Instalación de PyTorch con soporte para CUDA~12.6, versión de
+  controladores disponible en \texttt{tensor}:
+\begin{verbatim}
+pip install torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cu126
+\end{verbatim}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+  \item Instalación del resto de dependencias del repositorio:
+\begin{verbatim}
+pip install prettymidi mireval librosa==0.9.2 \
+    numpy scipy joblib tensorboard
+\end{verbatim}
+\end{enumerate}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                               ALTRES  APÈNDIXS                              %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Después de preparar el entorno, se clonó el repositorio público desde el GitHub
+oficial~\cite{wang2025mftfilm} y se creó un enlace simbólico para trabajar con
+MAESTRO previamente descargado. Durante las pruebas iniciales se encontraron
+dos problemas técnicos relevantes cuya resolución fue necesaria para poder
+ejecutar el entrenamiento.
 
+El primero fue un problema de \textbf{obsolescencia de dependencias}. Para
+garantizar que los espectrogramas CQT generados coincidieran con los del
+artículo original, fue estrictamente necesario usar la versión \textbf{0.9.2}
+de \texttt{librosa}: las versiones posteriores (a partir de la~0.10)
+introdujeron modificaciones en el cómputo del \textit{padding} interno del CQT
+que producen una diferencia de uno o dos \textit{frames} entre el tensor de
+audio y el de etiquetas MIDI, causando un error fatal en la inicialización del
+\textit{DataLoader}. Sin embargo, el clúster \texttt{tensor} opera con Python
+3.12, cuyas herramientas de construcción (\texttt{setuptools}~v70+) eliminaron
+el módulo \texttt{pkg\_resources} del que depende \texttt{librosa}~0.9.2.
+La solución fue degradar las herramientas de construcción del entorno virtual a
+la última versión de transición que conserva dicho módulo:
+\begin{verbatim}
+pip install "setuptools==69.5.1" --force-reinstall
+\end{verbatim}
 
-\chapter{??? ???????????? ????}
+El segundo fue una \textbf{incompatibilidad de la API de PyTorch}. Los autores
+definieron la clase \texttt{CacheDataset} heredando de \texttt{TensorDataset}
+pero invocando al constructor padre sin tensores, lo que las versiones modernas
+de PyTorch (serie~2.x) rechazan con una excepción de desajuste dimensional.
+La solución consistió en modificar la herencia en \texttt{data/dataload.py},
+sustituyendo \texttt{TensorDataset} por la clase base estándar \\
+\texttt{torch.utils.data.Dataset}:
 
-????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+\begin{verbatim}
+# Antes:
+class CacheDataset(TensorDataset):
+    def __init__(self, ...):
+        super(CacheDataset, self).__init__()
+
+# Después:
+class CacheDataset(torch.utils.data.Dataset):
+    def __init__(self, ...):
+        super(CacheDataset, self).__init__()
+\end{verbatim}
+
+Adicionalmente, las interrupciones abruptas durante los primeros intentos
+corrompieron parcialmente los archivos \texttt{.pth} de caché, por lo que fue
+necesario eliminar el árbol de directorios y regenerarlos desde cero.
+
+Una vez resueltos los problemas, se ajustaron los hiperparámetros en el archivo
+central de configuración \texttt{constant\_macro.py} para replicar las
+condiciones del artículo original. La Tabla~\ref{tab:config} resume los
+parámetros empleados~\cite{wang2025mftfilm}.
+
+\begin{table}[H]
+  \centering
+  \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py}
+  para el entrenamiento de MFT-FiLM.}
+  \label{tab:config}
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Parámetro} & \textbf{Valor} & \textbf{Descripción} \\
+    \hline
+    \texttt{EPOCH\_RANGE}   & 60                      & Número total de épocas \\
+    \texttt{BATCH\_SIZE}    & 10                      & Muestras por lote \\
+    \texttt{LEARNING\_RATE} & 0{,}0005                & Tasa de aprendizaje \\
+    \texttt{DATASET\_NAME}  & \texttt{maestro-v3.0.0} & Versión del \textit{dataset} \\
+    \texttt{DATASET\_PATH}  & ruta absoluta           & Directorio raíz de los datos \\
+    \texttt{MODEL\_PATH}    & ruta absoluta           & Directorio de salida del modelo \\
+    \texttt{MODEL\_NAME}    & \texttt{MTFiLM}         & Identificador del modelo \\
+    \texttt{SCHEDULE\_IDX}  & \texttt{2x}             & Objetivo: transcripción de notas \\
+    \hline
+  \end{tabular}
+\end{table}
 
 
 
