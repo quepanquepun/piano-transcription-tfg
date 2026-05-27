@@ -51,7 +51,11 @@
 \usepackage{amsthm}
 \newtheorem*{lemma*}{Lema}
 \newtheorem*{theorem*}{Teorema}
-
+\usepackage[
+  format=plain,
+  justification=justified,
+  singlelinecheck=false
+]{caption}
 \usepackage{placeins}
 \raggedbottom
 
@@ -575,7 +579,7 @@ precisión global del sistema, pero también pone de manifiesto las limitaciones
 de manera demasiado rígida o combinan características sin un mecanismo de ponderación adecuado~\cite{wang2025mftfilm}.
 
 
-En este proyecto, la primera alternativa que se ha implementado es el modelo \textbf{MFT-FiLM}, que propone un enfoque más flexible y eficiente 
+En este proyecto, la primera alternativa que se ha implementado es el modelo \textbf{MFT-FiLM}~\cite{wang2025mftfilm}, que propone un enfoque más flexible y eficiente 
 basado en el acondicionamiento mediante FiLM para fusionar dependencias espectrales y temporales, así como para intercambiar información entre las
 distintas ramas de tarea. El uso de módulos FT-FiLM e IFT-FiLM permite ajustar dinámicamente las representaciones intermedias en función del contexto, 
 obteniendo un modelo con un número de parámetros reducido que mantiene un rendimiento competitivo en la transcripción de piano a partir de 
@@ -584,8 +588,8 @@ representaciones adaptadas a la percepción musical.
 En este capítulo, la Sección~\ref{sec:cqt} introduce la representación tiempo--frecuencia empleada, basada en la Transformada Q Constante (CQT).
 A continuación, la Sección~\ref{sec:mft_arch} describe la arquitectura general del sistema y detalla los módulos FiLM, FT-FiLM e IFT-FiLM.
 La Sección~\ref{sec:mft_loss_eff} presenta la función de pérdida conjunta y analiza la eficiencia computacional del modelo.
-En la Sección~\ref{sec:mft_preprocess} se explica el preproceso de los datos y el procedimiento de entrenamiento, 
-y finalmente la Sección~\ref{sec:mft_resultados} resume los resultados obtenidos y su comparación con modelos del estado del arte.
+La Sección~\ref{sec:mft_exp_resultados} recoge el preprocesamiento de los datos, el procedimiento de entrenamiento y los resultados alcanzados.
+ Finalmente la Sección~\ref{sec:mft_conclusiones} sintetiza brevemente el trabajo realizado en este capítulo y destaca los principales resultados obtenidos.
 \section{Transformada Q Constante}
 \label{sec:cqt}
 
@@ -761,7 +765,7 @@ de distintas tareas.
   {Arquitectura detallada de los módulos FT-FiLM e IFT-FiLM.
   La señal de \textbf{entrada} (azul, parte inferior) tiene dimensiones $(C, T, F)$.
   Una convolución 1D con kernel de tamaño $2F - 1 = 175$ opera sobre el eje de
-  frecuencia; a continuación, una convolución 1D con kernel de tamaño~1 expande
+  frecuencia; a continuación, una convolución 1D con kernel de tamaño~1 ($k_s=1$) expande
   los canales de $C$ a $6C$ y el tensor resultante se divide en dos mitades de
   $3C$ canales: los parámetros de escala $Z_\gamma$ y desplazamiento $Z_\beta$.
   En el módulo \textbf{IFT-FiLM} (ramas \textit{velocity} y \textit{frame+offset}),
@@ -875,7 +879,7 @@ $Z'_\beta$ se \textbf{desconectan del grafo de cómputo} (\texttt{detach}) antes
 ser incorporados~\cite{wang2025mftfilm}. Esta operación impide que el gradiente 
 fluya de vuelta hacia la rama \foreign{english}{onset} a través de esta conexión, 
 evitando inestabilidades en la optimización. El módulo IFT-FiLM puede interpretarse 
-como una red neuronal dinámica: los parámetros de modulación no son fijos,sino que 
+como una red neuronal dinámica: los parámetros de modulación no son fijos, sino que 
 se generan en cada paso en función de las entradas de ambas ramas, permitiendo que 
 la red adapte su comportamiento de acuerdo con el contexto conjunto de las tareas 
 involucradas~\cite{wang2025mftfilm}.
@@ -918,58 +922,35 @@ Esta eficiencia no sacrifica capacidad expresiva gracias al diseño jerárquico 
 de atención de complejidad cuadrática, sin renunciar a la capacidad de capturar dependencias espectrales y temporales de largo alcance.
 
 
-\section{Preproceso y entrenamiento}
-\label{sec:mft_preprocess}
+\section{Experimentos}
+\label{sec:mft_exp_resultados}
 
-Antes del entrenamiento, se ejecuta una fase de \textbf{preprocesamiento y caché} del \textit{dataset}. Durante esta fase se transforma cada audio del conjunto MAESTRO en su espectrograma CQT mediante la librería
-\texttt{librosa}, y los archivos MIDI correspondientes son procesados mediante \texttt{pretty\_midi} para generar los \textit{piano rolls} de \textit{ground truth}.
+Los experimentos de entrenamiento y evaluación del modelo MFT-FiLM se han llevado a cabo en el clúster de cómputo 
+de alto rendimiento \texttt{tensor} del DSIC. La descripción 
+detallada del entorno hardware y software, así como de la configuración del experimento, se recoge en el 
+Anexo~\ref{anx:mft_config}.
 
-Adicionalmente, la duración de cada nota en el \textit{ground truth} se extiende en función
-de la información de los pedales de \textit{sustain} y \textit{sostenuto}, siguiendo el siguiente criterio: una nota se prolonga hasta que el valor del
-pedal de sustain en el archivo MIDI cae por debajo de 64, o hasta que la misma tecla es pulsada de nuevo. Este paso es crucial para la fidelidad del \textit{ground truth}, ya que
-en interpretaciones de piano con pedal, las notas resuenan durante más tiempo del que dura la pulsación física de la tecla; ignorar esta información produciría un \textit{ground truth}
+Antes del entrenamiento, se ejecuta una fase de \textbf{preprocesamiento y caché} del \textit{dataset}. Durante 
+esta fase se transforma cada audio del conjunto MAESTRO en su espectrograma CQT mediante la librería \texttt{librosa} 
+y los archivos MIDI correspondientes son procesados mediante \texttt{pretty\_midi} para generar los \textit{piano rolls} 
+de \textit{ground truth} (véase la Sección~\ref{anx:mft_libs} del Anexo~\ref{anx:mft_config} para una descripción 
+de estas herramientas).
+
+Adicionalmente, la duración de cada nota en el \textit{ground truth} se extiende en función de la información 
+de los pedales de \textit{sustain} y \textit{sostenuto}, siguiendo el criterio habitual en transcripción 
+automática de piano: una nota se prolonga hasta que el valor del pedal de \textit{sustain} en el archivo MIDI 
+cae por debajo de 64, o hasta que la misma tecla es pulsada de nuevo. Este paso es crucial para la fidelidad 
+del \textit{ground truth}, ya que en interpretaciones de piano con pedal las notas resuenan durante más tiempo 
+del que dura la pulsación física de la tecla; ignorar esta información produciría un \textit{ground truth} 
 sistemáticamente más corto que el audio real.
 
-El proceso se paraleliza mediante la librería \texttt{joblib}, y el resultado de la ejecución es un conjunto de archivos binarios que serán reutilizados directamente en todos los entrenamientos subsiguientes, eliminando el coste de reprocesamiento.
-
-Dado que el tiempo estimado de entrenamiento excedía ampliamente el límite de 24 horas de la cola \texttt{docencia}, el trabajo se sometió a la cola \texttt{long} de SLURM.
-Se solicitó una única GPU L40S, ya que, como hemos visto, es suficiente para alojar el modelo con el \textit{batch size} seleccionado (véase el Anexo~\ref{anx:mft_config} para los detalles completos de
-configuración del entorno).
-
-Durante el entrenamiento se observó un patrón de utilización de la GPU con oscilaciones periódicas de uso entre el 0\,\% y el 100\,\%, en lugar de un valor cercano al máximo continuado.
-Este fenómeno, conocido como \textit{GPU starvation} o cuello de botella
-de entrada/salida (\textit{I/O bottleneck}), se produce cuando la velocidad de cómputo de la
-GPU es significativamente superior a la velocidad con que la CPU puede preparar y transferir
-nuevos lotes de datos a la VRAM.
-
-El mecanismo es el siguiente: una vez que la GPU termina de procesar un lote de 10
-espectrogramas (operación que, dada la compacidad del modelo, se
-completa en pocos segundos), el proceso queda bloqueado a la espera de que la CPU lea el
-siguiente lote desde los archivos \texttt{.pth} en disco y lo transfiera a la VRAM a través
-del bus PCIe. Durante ese intervalo de espera, la utilización de la GPU cae al 0\,\%. En la
-configuración empleada, este fenómeno fue particularmente pronunciado debido a que \texttt{tensor} solo tiene un nodo, compartido por todos los usuarios, y no se puede forzar el \texttt{DataLoader} para usar continuamente todos los \texttt{num\_workers} disponibles.
+El resultado de la fase de preprocesamiento es un conjunto de archivos binarios en disco que almacenan, 
+para cada fragmento de audio, el espectrograma CQT y los correspondientes mapas de activación de nota. 
+Estos archivos de caché se reutilizan directamente en todos los entrenamientos subsiguientes, de modo que 
+el costoso cálculo de las representaciones tiempo--frecuencia y de los \textit{piano rolls} sólo se realiza una vez.
 
 
-Como consecuencia directa de este cuello de botella, la duración efectiva de cada época fue de
-aproximadamente \textbf{83 minutos}, frente a los 43,5 minutos reportados por los autores
-originales con dos GPUs RTX 4090. En el \foreign{english}{setup} original, la paralelización entre dos GPUs
-permitía solapar parcialmente la fase de transferencia de datos con el cómputo sobre la segunda
-tarjeta, mitigando significativamente este efecto y casi duplicando el rendimiento efectivo.
-
-El clúster \texttt{tensor} impone una duración máxima de \textbf{72 horas} para los trabajos sometidos
-a la cola \texttt{long}. Dado que cada época requirió aproximadamente 83 minutos ---prácticamente
-el doble del tiempo estimado inicialmente---, el trabajo de entrenamiento fue interrumpido por
-SLURM al alcanzar dicho límite temporal, habiendo completado únicamente \textbf{30 de las 60
-épocas planificadas}.
-
-A pesar de no haber completado el ciclo de entrenamiento establecido en el artículo, el
-mecanismo de validación dinámica y guardado automático de \textit{checkpoints} preservó el
-mejor modelo alcanzado durante las 30 épocas ejecutadas. Este modelo resultó lo suficientemente bueno en la evaluación, obteniendo resultados muy cercanos al estado del arte, que analizaremos en la siguiente sección.
-
-\section{Resultados}
-\label{sec:mft_resultados}
- 
-En esta sección se analizan los resultados obtenidos por el modelo MFT-FiLM entrenado sobre MAESTRO v3.0.0.
+A continuación se analizan los resultados obtenidos por el modelo MFT-FiLM entrenado sobre MAESTRO v3.0.0.
 Las métricas empleadas coinciden con el protocolo estándar descrito en la Sección~\ref{sec:metricas}: 
 se evalúa el rendimiento a nivel de trama y a nivel de nota mediante precisión, \textit{recall} y puntuación $F_1$, 
 tanto para la activación de teclas (\textit{Frame}) como para las variantes \textit{Note Onset}, 
@@ -1011,6 +992,11 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
     \hline
   \end{tabular}}
 \end{table}
+
+En la Tabla~\ref{tab:mft_maestro_v3} se observa que el modelo MFT-FiLM entrenado alcanza unas puntuaciones $F_1$ muy próximas a las reportadas por los autores originales en MAESTRO v3.0.0~\cite{wang2025mftfilm}.
+A pesar de haber completado únicamente 30 de las 60 épocas de entrenamiento descritas en el artículo, el $F_1$ de trama se mantiene por encima del 94\,\%, mientras que las métricas de nota alcanzan valores superiores al 98\,\% en \textit{Note Onset} y en torno al 91--91{,}5\,\% en \textit{Note w/ Offset} y \textit{Note w/ Offset \& Velocity}.
+Estas diferencias de unas pocas décimas respecto a los resultados publicados pueden atribuirse tanto a la reducción del número de épocas como a las pequeñas divergencias en el entorno de cómputo (ver Anexo~\ref{anx:mft_config}).
+
 
 \begin{table}[H]
   \centering
@@ -1074,10 +1060,6 @@ sobre MAESTRO v3.0.0, incluyendo las métricas de $F_1$, precisión y \textit{re
   \end{tabular}}
 \end{table}
 
-La Tabla~\ref{tab:mft_maestro_v3} muestra que el modelo MFT-FiLM entrenado alcanza unas puntuaciones $F_1$ muy próximas a las reportadas por los autores originales en MAESTRO v3.0.0~\cite{wang2025mftfilm}.
-A pesar de haber completado únicamente 30 de las 60 épocas de entrenamiento descritas en el artículo, el $F_1$ de trama se mantiene por encima del 94\,\%, mientras que las métricas de nota alcanzan valores superiores al 98\,\% en \textit{Note Onset} y en torno al 91--91{,}5\,\% en \textit{Note w/ Offset} y \textit{Note w/ Offset \& Velocity}.
-Estas diferencias de unas pocas décimas respecto a los resultados publicados pueden atribuirse tanto a la reducción del número de épocas como a las pequeñas divergencias en el entorno de cómputo ya comentadas en la Sección~\ref{sec:mft_preprocess}.
-
 Las Tablas~\ref{tab:mft_maestro_prec} y~\ref{tab:mft_maestro_rec} descomponen el $F_1$ en términos de precisión y \textit{recall}.
 En la reproducción se observa una precisión especialmente alta en la detección de inicios de nota, cercana al 99\,\%, lo que indica que el modelo apenas introduce notas espurias que no existen en la partitura de referencia.
 El \textit{recall} en onsets se sitúa ligeramente por debajo, en torno al 97\,\%, lo que sugiere que los pocos errores restantes se deben principalmente a notas omitidas en pasajes complejos más que a activaciones falsas.
@@ -1094,14 +1076,9 @@ de prueba, el análisis de las métricas durante el proceso de entrenamiento
 resulta fundamental para comprender el comportamiento analítico y la eficiencia 
 de aprendizaje de la arquitectura MFT-FiLM. Con este propósito, se ha 
 monitorizado la evolución de la función de pérdida (\textit{loss}) y de las 
-métricas de validación a lo largo de las 30 épocas completadas.
-
-Como se aprecia en la Figura~\ref{fig:loss_epoch1}, el modelo exhibe una
-convergencia inicial excepcionalmente rápida. Durante las primeras iteraciones
-de la primera época, la función de pérdida experimenta un descenso abrupto
-seguido de una estabilización progresiva, lo que sugiere que el mecanismo FiLM
-facilita una adaptación veloz a las representaciones espectro-temporales de la
-señal de audio.
+métricas de validación a lo largo de las 30 épocas completadas. En primer lugar 
+se analiza la dinámica de la pérdida dentro de la primera época de entrenamiento (Figura~\ref{fig:loss_epoch1}), 
+que proporciona información detallada sobre la fase de adaptación inicial del modelo.
 
 \begin{figure}[H]
   \centering
@@ -1115,12 +1092,25 @@ señal de audio.
   \label{fig:loss_epoch1}
 \end{figure}
 
-Al analizar la tendencia macroscópica en la Figura~\ref{fig:loss_all}, se
-observa que la pérdida de entrenamiento continúa decreciendo de forma
-asintótica, reduciéndose de $0{,}277$ en la época~1 a $0{,}063$ en la
-época~30. La pérdida de validación acompaña esta tendencia sin mostrar
-divergencias, lo cual permite descartar la presencia de sobreajuste
-(\textit{overfitting}) en esta etapa del entrenamiento.
+
+La Figura~\ref{fig:loss_epoch1} muestra que el modelo exhibe una convergencia 
+inicial excepcionalmente rápida. Durante las primeras iteraciones
+de la primera época, la función de pérdida experimenta un descenso abrupto
+seguido de una estabilización progresiva, lo que sugiere que el mecanismo FiLM
+facilita una adaptación veloz a las representaciones espectro-temporales de la
+señal de audio. Este patrón es consistente con un régimen de 
+aprendizaje en el que los parámetros del modelo se ajustan con rapidez a la 
+estructura básica de los datos, mientras que las etapas posteriores de la época 
+se dedican a refinar gradualmente las representaciones internas sin oscilaciones 
+ni comportamientos inestables.
+
+
+
+A continuación se analiza la evolución macroscópica de la pérdida de 
+entrenamiento y validación a lo largo de las 30 épocas completadas (Figura~\ref{fig:loss_all}), con el fin 
+de valorar la estabilidad global del proceso de optimización y la posible 
+aparición de sobreajuste.
+
 
 \begin{figure}[H]
   \centering
@@ -1136,27 +1126,47 @@ divergencias, lo cual permite descartar la presencia de sobreajuste
   \label{fig:loss_all}
 \end{figure}
 
+Al analizar la Figura~\ref{fig:loss_all}, se 
+observa que la pérdida de entrenamiento continúa decreciendo de forma 
+monótona y asintótica, reduciéndose de $0{,}277$ en la época~1 a $0{,}063$ 
+en la época~30. La curva de validación acompaña esta trayectoria con valores 
+ligeramente superiores pero paralelos, sin presentar la separación creciente 
+característica del sobreajuste. Este comportamiento indica que, en el rango de 
+épocas ejecutado, el modelo sigue mejorando su capacidad de generalización y 
+no ha agotado aún su potencial de aprendizaje; de hecho, cabe esperar una 
+ligera mejora adicional de las métricas si el entrenamiento se prolongara hasta 
+las 60 épocas planificadas en el trabajo original.
+
 \clearpage
 
 Continuamos analizando métricas en validación. La Figura~\ref{fig:f1_evolution} desglosa la evolución de la métrica $F_1$ sobre 
-el conjunto de validación para las cuatro subtareas evaluadas. El aprendizaje 
-presenta una estructura jerárquica bien definida: la detección de 
+el conjunto de validación para las cuatro subtareas evaluadas. 
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figuras/f1_validacion_por_epoca_sci.png}
+  \caption[Evolución de la métrica $F_1$ en el conjunto de validación]{%
+  Evolución de la métrica $F_1$ en el conjunto de validación para 
+  la estimación de \textit{Frame}, \textit{Onset}, \textit{Offset} y 
+  \textit{Velocity} durante las 30 épocas de entrenamiento. Se aprecia una
+  convergencia rápida y estable en las tareas de \textit{Frame}, \textit{Onset}
+  y \textit{Offset}, mientras que la tarea de \textit{Velocity} presenta una
+  mejora más gradual asociada a la mayor complejidad de modelar la dinámica
+  de la interpretación.}
+  \label{fig:f1_evolution}
+\end{figure}
+
+
+En la Figura~\ref{fig:f1_evolution} se observa una estructura jerárquica de aprendizaje bien definida: la detección de 
 \textit{Note Onset} alcanza valores de convergencia superiores al $97\%$ de 
 forma muy temprana (época 5). En contraste, la estimación de la velocidad 
 (\textit{Velocity}), al constituir un problema de regresión dependiente de la 
 intensidad dinámica de la pulsación, requiere un proceso de optimización más 
 prolongado, evolucionando desde un $72{,}22\%$ inicial hasta consolidarse 
-por encima del $85\%$ hacia la culminación del entrenamiento.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.92\textwidth]{figuras/f1_validacion_por_epoca_sci.png}
-    \caption[Evolución de la métrica $F_1$ en el conjunto de validación]{%
-    Evolución de la métrica $F_1$ en el conjunto de validación para 
-    la estimación de \textit{Frame}, \textit{Onset}, \textit{Offset} y 
-    \textit{Velocity} durante las 30 épocas de entrenamiento.}
-    \label{fig:f1_evolution}
-\end{figure}
+por encima del $85\%$ hacia la culminación del entrenamiento. Esta diferencia de ritmos de convergencia es 
+coherente con la dificultad relativa de cada subtarea y confirma que la 
+arquitectura es capaz de capturar primero la estructura temporal de los 
+eventos de nota y, en una segunda fase, refinar la estimación de su dinámica.
 
 Para analizar rigurosamente la naturaleza de las predicciones del modelo, 
 resulta necesario descomponer esta métrica armónica en sus constituyentes 
@@ -1183,11 +1193,11 @@ validación.
   \label{fig:prec_rec_comparison}
 \end{figure}
 
-El contraste analítico entre ambas gráficas evidencia que el modelo MFT-FiLM 
+El contraste analítico entre ambas gráficas de la Figura~\ref{fig:prec_rec_comparison} evidencia que el modelo MFT-FiLM 
 presenta un comportamiento marcadamente \textbf{conservador}. A lo largo de 
 todas las épocas y tareas evaluadas, los niveles de precisión 
 se mantienen de forma sistemática por encima de los 
-niveles de \textit{recall} (Figura~\ref{fig:prec_rec_comparison}). A modo de ejemplo, en 
+niveles de \textit{recall}. A modo de ejemplo, en 
 la época 30, la precisión para la detección de \textit{Note Onset} alcanza 
 valores cuasi perfectos ($>99{,}5\%$), mientras que la exhaustividad (\textit{recall}) se 
 estabiliza en torno al $96{,}5\%$.
@@ -1211,6 +1221,39 @@ impacto acústico muy disruptivo y disonante para el oyente. Por el contrario,
 la omisión puntual de una nota interna dentro de un clúster armónico complejo 
 (falso negativo) tiende a resultar perceptualmente imperceptible, garantizando 
 así la preservación de la coherencia tonal y rítmica de la obra.
+
+\section{Conclusiones}
+\label{sec:mft_conclusiones}
+
+El modelo MFT-FiLM abordado en este capítulo propone una arquitectura de transcripción multitarea de piano basada en la
+Transformada Q Constante como representación de entrada, una organización en ramas paralelas para 
+\textit{frame}, \textit{onset}, \textit{offset} y \textit{velocity}, y un mecanismo de modulación FiLM
+especializado en los módulos FT-FiLM e IFT-FiLM. Este diseño permite desacoplar el procesamiento en los
+ejes de frecuencia, canal y tiempo, explotando de forma eficiente las dependencias espectrales y temporales
+sin recurrir a mecanismos de atención de alta complejidad~\cite{wang2025mftfilm}.
+
+Desde el punto de vista cuantitativo, la reproducción del experimento sobre MAESTRO v3.0.0 alcanza puntuaciones
+$F_1$, de precisión y de \textit{recall} muy próximas a las reportadas por los autores originales, a pesar 
+de que el entrenamiento solo completó 30 de las 60 épocas previstas. El modelo mantiene un $F_1$ de trama 
+superior al 94\,\% y métricas de nota en torno al 91--91{,}5\,\% para las variantes más 
+exigentes (\textit{Note w/ Offset} y \textit{Note w/ Offset \& Velocity}), lo que sitúa a MFT-FiLM como 
+una alternativa competitiva frente a modelos considerablemente más pesados, con únicamente 
+$1{,}2$ millones de parámetros~\cite{wang2025mftfilm,yan2024transkun}.
+
+En cuanto al proceso de optimización, la evolución de la pérdida de entrenamiento y validación muestra
+una convergencia estable y sin indicios de sobreajuste en las 30 épocas completadas, con una reducción
+asintótica de la pérdida total y un acompañamiento estrecho por parte de la pérdida de validación. De 
+forma complementaria, el análisis de las métricas en validación revela un comportamiento sistemáticamente 
+conservador del modelo, con niveles de precisión que superan de forma consistente al \textit{recall} en todas 
+las subtareas, lo que indica que MFT-FiLM prioriza evitar falsas activaciones frente a la recuperación 
+exhaustiva de todas las notas.
+
+Este sesgo conservador resulta especialmente favorable desde una perspectiva perceptual: en la síntesis de 
+las transcripciones resultantes, la ausencia ocasional de notas internas dentro de acordes densos tiende a 
+ser poco perceptible, mientras que la introducción de notas espurias genera artefactos disonantes claramente 
+audibles. En conjunto, los resultados numéricos y el comportamiento analítico del entrenamiento confirman que
+la arquitectura MFT-FiLM constituye una solución eficiente y robusta para la transcripción automática de piano, 
+capaz de aproximarse al estado del arte con un coste computacional significativamente reducido.
 %==============================================================================
 
 \chapter{Transkun}
@@ -2021,110 +2064,99 @@ Y.~Fang, B.~Liao, X.~Wang, J.~Fang, J.~Qi, R.~Wu, J.~Niu y W.~Liu.
 \chapter{Configuración del experimento MFT-FiLM}
 \label{anx:mft_config}
 
+\section{Entorno de ejecución y dependencias}
+
 El entrenamiento del modelo MFT-FiLM se llevó a cabo en el clúster de cómputo
 de alto rendimiento \textbf{tensor}, perteneciente al Departamento de Sistemas
 Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia.
 Este sistema está formado por un único nodo equipado con \textbf{$503\,\text{GB}$
 de memoria RAM} y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S}
 con $48\,\text{GB}$ de memoria GDDR6 ECC cada una. Las GPUs L40S pertenecen a
-la familia \foreign{english}{Ada Lovelace}, orientadas específicamente a cargas
-de trabajo de inteligencia artificial sostenidas en entornos de servidor.
-A diferencia de las tarjetas de consumo de la misma generación, incorporan
-memoria ECC (\textit{Error-Correcting Code}), que detecta y corrige errores de
-bit durante el cómputo, algo especialmente útil en trabajos de larga duración
-como el entrenamiento de redes neuronales. El hardware empleado en el artículo
-original consistía en dos tarjetas NVIDIA GeForce RTX 4090 de $24\,\text{GB}$
-de VRAM cada una~\cite{wang2025mftfilm}; la L40S cuenta individualmente con
-$48\,\text{GB}$, lo que permitió alojar el modelo con lotes del tamaño
-requerido sin restricciones.
+la familia \foreign{english}{Ada Lovelace}, orientadas a cargas de trabajo de
+inteligencia artificial en entornos de servidor. El hardware empleado en el
+artículo original consistía en dos tarjetas NVIDIA GeForce RTX~4090 de
+$24\,\text{GB}$ de VRAM cada una~\cite{wang2025mftfilm}; la L40S cuenta
+individualmente con $48\,\text{GB}$, lo que permitió alojar el modelo con el
+tamaño de lote requerido sin restricciones de memoria.
 
-El acceso al clúster se realiza mediante SSH a través del nodo de entrada \\
-\texttt{tensor.dsic.upv.es}, autenticado con credenciales institucionales.
-El sistema de gestión de trabajos es \textbf{SLURM}
-(\textit{Simple Linux Utility for Resource Management}), que organiza la
-ejecución mediante dos colas principales: \texttt{docencia}, para trabajos de
-duración inferior a 24 horas, y \texttt{long}, para trabajos de hasta 72 horas.
-Dada la duración estimada de entrenamiento de 43 horas reportada por los
-autores~\cite{wang2025mftfilm}, fue necesario usar la cola \texttt{long}.
+El sistema de gestión de trabajos del clúster es \textbf{SLURM}, que organiza
+la ejecución mediante dos colas principales: \texttt{docencia}, para trabajos
+de duración inferior a 24 horas, y \texttt{long}, para trabajos de hasta
+72 horas. Dada la duración estimada de entrenamiento reportada por los
+autores~\cite{wang2025mftfilm}, fue necesario emplear la cola \texttt{long}.
 
-Todas las dependencias se encapsularon en un entorno virtual de Python para
-garantizar la reproducibilidad del experimento y aislar las versiones de las
-librerías del sistema global del clúster. El proceso de creación fue el
-siguiente:
+El entorno software se configuró sobre Python~3.12 con \texttt{PyTorch} y
+\texttt{CUDA} compatibles con las GPUs L40S, y se instalaron las dependencias
+específicas del repositorio original (incluyendo \texttt{librosa},
+\texttt{pretty\_midi}, \texttt{mireval} y \texttt{joblib}) en un entorno
+virtual aislado para garantizar la reproducibilidad del experimento.
 
-\begin{enumerate}
-  \item Creación del entorno virtual con el intérprete Python~3.12 disponible
-  en el clúster:
-\begin{verbatim}
-mkdir -p ~/venv
-python3 -m venv ~/venv/MFT-FiLM
-source ~/venv/MFT-FiLM/bin/activate
-\end{verbatim}
+Durante la preparación del entorno surgieron dos incidencias relevantes. La
+primera fue un problema de \textbf{obsolescencia de dependencias}: para
+reproducir exactamente los espectrogramas CQT del trabajo original se requirió
+la versión \textbf{0.9.2} de \texttt{librosa}, pero esta versión dependía del
+módulo \texttt{pkg\_resources}, eliminado en las versiones recientes de
+\texttt{setuptools} asociadas a Python~3.12. El problema se solventó manteniendo
+\texttt{librosa}~0.9.2 y degradando las herramientas de construcción del
+entorno a la última versión compatible, lo que permitió generar CQT idénticos a
+los descritos en~\cite{wang2025mftfilm} sin modificar el código original.
 
-  \item Instalación de PyTorch con soporte para CUDA~12.6, versión de
-  controladores disponible en \texttt{tensor}:
-\begin{verbatim}
-pip install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu126
-\end{verbatim}
+La segunda incidencia fue una \textbf{incompatibilidad de la API de PyTorch}.
+Los autores definieron la clase \texttt{CacheDataset} heredando de
+\texttt{TensorDataset} pero invocando al constructor padre sin tensores, algo
+que las versiones modernas de PyTorch (serie~2.x) rechazan con una excepción de
+desajuste dimensional. La solución consistió en sustituir la herencia de
+\texttt{TensorDataset} por la clase base estándar
+\texttt{torch.utils.data.Dataset}, manteniendo inalterada la lógica interna del
+conjunto de datos. Adicionalmente, fue necesario regenerar los archivos de
+caché \texttt{.pth} tras algunos intentos fallidos de entrenamiento que habían
+corrompido parcialmente dichos ficheros.
 
-  \item Instalación del resto de dependencias del repositorio:
-\begin{verbatim}
-pip install prettymidi mireval librosa==0.9.2 \
-    numpy scipy joblib tensorboard
-\end{verbatim}
-\end{enumerate}
+\section{Rendimiento del entrenamiento en el clúster}
 
-Después de preparar el entorno, se clonó el repositorio público desde el GitHub
-oficial~\cite{wang2025mftfilm} y se creó un enlace simbólico para trabajar con
-MAESTRO previamente descargado. Durante las pruebas iniciales se encontraron
-dos problemas técnicos relevantes cuya resolución fue necesaria para poder
-ejecutar el entrenamiento.
+Durante el entrenamiento se observó un patrón de utilización de la GPU con
+oscilaciones periódicas de uso entre el 0\,\% y el 100\,\%, en lugar de un valor
+cercano al máximo continuado. Este fenómeno, conocido como
+\textit{GPU starvation} o cuello de botella de entrada/salida
+(\textit{I/O bottleneck}), se produce cuando la velocidad de cómputo de la
+GPU es significativamente superior a la velocidad con que la CPU puede preparar
+y transferir nuevos lotes de datos a la VRAM.
 
-El primero fue un problema de \textbf{obsolescencia de dependencias}. Para
-garantizar que los espectrogramas CQT generados coincidieran con los del
-artículo original, fue estrictamente necesario usar la versión \textbf{0.9.2}
-de \texttt{librosa}: las versiones posteriores (a partir de la~0.10)
-introdujeron modificaciones en el cómputo del \textit{padding} interno del CQT
-que producen una diferencia de uno o dos \textit{frames} entre el tensor de
-audio y el de etiquetas MIDI, causando un error fatal en la inicialización del
-\textit{DataLoader}. Sin embargo, el clúster \texttt{tensor} opera con Python
-3.12, cuyas herramientas de construcción (\texttt{setuptools}~v70+) eliminaron
-el módulo \texttt{pkg\_resources} del que depende \texttt{librosa}~0.9.2.
-La solución fue degradar las herramientas de construcción del entorno virtual a
-la última versión de transición que conserva dicho módulo:
-\begin{verbatim}
-pip install "setuptools==69.5.1" --force-reinstall
-\end{verbatim}
+En la práctica, una vez que la GPU terminaba de procesar un lote de 10
+espectrogramas (operación que, dada la compacidad del modelo, se completaba en
+pocos segundos), el proceso quedaba bloqueado a la espera de que la CPU leyera
+el siguiente lote desde los archivos \texttt{.pth} en disco y lo transfiriera a
+la VRAM a través del bus PCIe. Durante ese intervalo de espera la utilización
+de la GPU caía al 0\,\%. En la configuración empleada, este fenómeno fue
+particularmente pronunciado debido a que \texttt{tensor} sólo dispone de un
+nodo compartido por todos los usuarios, lo que impide reservar de forma
+dedicada todos los recursos de entrada/salida disponibles para un único
+\texttt{DataLoader}.
 
-El segundo fue una \textbf{incompatibilidad de la API de PyTorch}. Los autores
-definieron la clase \texttt{CacheDataset} heredando de \texttt{TensorDataset}
-pero invocando al constructor padre sin tensores, lo que las versiones modernas
-de PyTorch (serie~2.x) rechazan con una excepción de desajuste dimensional.
-La solución consistió en modificar la herencia en \texttt{data/dataload.py},
-sustituyendo \texttt{TensorDataset} por la clase base estándar \\
-\texttt{torch.utils.data.Dataset}:
+Como consecuencia directa de estas limitaciones de entrada/salida, la duración
+efectiva de cada época de entrenamiento fue de aproximadamente \textbf{83
+minutos}, frente a los 43,5 minutos reportados por los autores originales con
+dos GPUs RTX~4090. En el \foreign{english}{setup} original, la paralelización
+entre dos GPUs permitía solapar parcialmente la fase de transferencia de datos
+con el cómputo sobre la segunda tarjeta, mitigando significativamente este
+efecto y casi duplicando el rendimiento efectivo.
 
-\begin{verbatim}
-# Antes:
-class CacheDataset(TensorDataset):
-    def __init__(self, ...):
-        super(CacheDataset, self).__init__()
+El clúster \texttt{tensor} impone una duración máxima de \textbf{72 horas} para
+los trabajos sometidos a la cola \texttt{long}. Dado que cada época requirió
+aproximadamente 83 minutos, el trabajo de entrenamiento fue interrumpido por
+SLURM al alcanzar dicho límite temporal, habiendo completado únicamente
+\textbf{30 de las 60 épocas planificadas}. A pesar de no haber completado el
+ciclo de entrenamiento descrito en el artículo original, el mecanismo de
+validación dinámica y guardado automático de \textit{checkpoints} preservó el
+mejor modelo alcanzado durante las 30 épocas ejecutadas, que es el que se
+emplea en el análisis de resultados.
 
-# Después:
-class CacheDataset(torch.utils.data.Dataset):
-    def __init__(self, ...):
-        super(CacheDataset, self).__init__()
-\end{verbatim}
+\section{Parámetros de configuración del experimento}
 
-Adicionalmente, las interrupciones abruptas durante los primeros intentos
-corrompieron parcialmente los archivos \texttt{.pth} de caché, por lo que fue
-necesario eliminar el árbol de directorios y regenerarlos desde cero.
-
-Una vez resueltos los problemas, se ajustaron los hiperparámetros en el archivo
-central de configuración \texttt{constant\_macro.py} para replicar las
-condiciones del artículo original. La Tabla~\ref{tab:config} resume los
-parámetros empleados~\cite{wang2025mftfilm}.
+Una vez resueltos los problemas de compatibilidad, se ajustaron los
+hiperparámetros en el archivo central de configuración
+\texttt{constant\_macro.py} para replicar las condiciones del artículo original.
+La Tabla~\ref{tab:config} resume los parámetros empleados~\cite{wang2025mftfilm}.
 
 \begin{table}[H]
   \centering
@@ -2135,17 +2167,52 @@ parámetros empleados~\cite{wang2025mftfilm}.
     \hline
     \textbf{Parámetro} & \textbf{Valor} & \textbf{Descripción} \\
     \hline
-    \texttt{EPOCH\_RANGE}   & 60                      & Número total de épocas \\
-    \texttt{BATCH\_SIZE}    & 10                      & Muestras por lote \\
-    \texttt{LEARNING\_RATE} & 0{,}0005                & Tasa de aprendizaje \\
+    \texttt{EPOCH\_RANGE}   & 60                     & Número total de épocas \\
+    \texttt{BATCH\_SIZE}    & 10                     & Muestras por lote \\
+    \texttt{LEARNING\_RATE} & 0{,}0005               & Tasa de aprendizaje \\
     \texttt{DATASET\_NAME}  & \texttt{maestro-v3.0.0} & Versión del \textit{dataset} \\
-    \texttt{DATASET\_PATH}  & ruta absoluta           & Directorio raíz de los datos \\
-    \texttt{MODEL\_PATH}    & ruta absoluta           & Directorio de salida del modelo \\
-    \texttt{MODEL\_NAME}    & \texttt{MTFiLM}         & Identificador del modelo \\
-    \texttt{SCHEDULE\_IDX}  & \texttt{2x}             & Objetivo: transcripción de notas \\
+    \texttt{DATASET\_PATH}  & ruta absoluta          & Directorio raíz de los datos \\
+    \texttt{MODEL\_PATH}    & ruta absoluta          & Directorio de salida del modelo \\
+    \texttt{MODEL\_NAME}    & \texttt{MTFiLM}        & Identificador del modelo \\
+    \texttt{SCHEDULE\_IDX}  & \texttt{2x}            & Objetivo: transcripción de notas \\
     \hline
   \end{tabular}
 \end{table}
+
+\section{Herramientas de preprocesamiento de audio y MIDI}
+\label{anx:mft_libs}
+
+El preprocesamiento del conjunto MAESTRO se apoya en dos librerías ampliamente
+utilizadas en la comunidad de \textit{Music Information Retrieval}:
+\texttt{librosa} para el tratamiento del audio y \texttt{pretty\_midi} para el
+manejo de archivos MIDI.
+
+La librería \texttt{librosa} es un paquete de Python orientado al análisis de
+señales de audio musicales. Entre otras funcionalidades, proporciona rutinas
+para el cálculo de representaciones tiempo--frecuencia como la Transformada de
+Fourier de tiempo corto (STFT) y la Transformada Q Constante (CQT), así como
+herramientas para el remuestreo, el filtrado y la extracción de descriptores
+espectrales. En este trabajo, \texttt{librosa} se utiliza para convertir cada
+grabación de MAESTRO en su correspondiente espectrograma CQT con los parámetros
+descritos en la Sección~\ref{sec:cqt}, que constituye la entrada del modelo
+MFT-FiLM.
+
+Por otro lado, \texttt{pretty\_midi} es una librería de Python diseñada para
+facilitar la lectura, escritura y manipulación estructurada de archivos MIDI.
+La librería ofrece una representación de alto nivel de las notas y de los
+eventos de control (por ejemplo, los pedales de \textit{sustain} y
+\textit{sostenuto}), lo que permite generar de forma directa los
+\textit{piano rolls} de activación de nota a partir de una partitura MIDI.
+En el contexto de este proyecto, \texttt{pretty\_midi} se utiliza para extraer
+las notas, extender su duración en función de los pedales y construir los mapas
+binarios de \textit{ground truth} que se alinean temporalmente con los
+espectrogramas CQT preprocesados mediante \texttt{librosa}.
+
+En conjunto, la combinación de \texttt{librosa} y \texttt{pretty\_midi} permite
+establecer un flujo de preprocesamiento consistente entre el dominio del audio
+y el del MIDI, garantizando que las representaciones de entrada y las etiquetas
+de salida estén correctamente sincronizadas y sean comparables con las del
+trabajo original.
 
 
 
