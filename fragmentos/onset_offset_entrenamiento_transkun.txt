@@ -1,0 +1,52 @@
+Seguimos con el análisis de la precisión, el \textit{recall}
+y el F1 de \textit{note+offset} medidos sobre el conjunto de entrenamiento a lo largo de las 112~épocas (Figura~\ref{fig:transkuntrainonset}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figuras/3_train_onset_metrics.png}
+    \caption[Métricas de \textit{note+offset} sobre entrenamiento de Transkun]{
+        Evolución de la precisión, \textit{recall} y F1 de \textit{note+offset} evaluados sobre el
+        conjunto de entrenamiento a lo largo de las 112~épocas del modelo Transkun. El eje
+        horizontal representa la época y el eje vertical la puntuación en el rango $[0, 1]$.
+        Las tres métricas parten de valores próximos a cero en las primeras épocas y convergen
+        progresivamente hacia valores superiores a $0{,}93$ a partir de la época~70,
+        estabilizándose en una banda estrecha durante la segunda mitad del entrenamiento.
+        La precisión se mantiene de forma sistemática por encima del \textit{recall} a lo largo
+        de todo el entrenamiento, lo que revela un sesgo conservador estable en las predicciones
+        del modelo.}
+    \label{fig:transkuntrainonset}
+\end{figure}
+
+A partir de la Figura~\ref{fig:transkuntrainonset} podemos descartar la presencia de
+subajuste y nos permite caracterizar con detalle el comportamiento del modelo sobre sus propios datos
+de entrenamiento.
+
+Durante las primeras épocas (0--4), la evolución es especialmente llamativa. La época~0
+presenta una precisión de $0{,}1302$ pero un \textit{recall} de apenas $0{,}0025$ y un F1 de
+$0{,}0023$: el modelo produce algunas predicciones de nota, pero prácticamente ninguna
+coincide con los eventos reales. En la época~1 la precisión cae adicionalmente hasta $0{,}0421$,
+síntoma de que en los primeros pasos de optimización el modelo aún está reorganizando su espacio
+de representación interno y puede atravesar regiones de pérdida elevada antes de encontrar
+una dirección de descenso estable. A partir de la época~2 el salto es radical: el F1 pasa de
+$0{,}0080$ a $0{,}1649$, y en la época~3 ya alcanza $0{,}4552$, superando el 50\,\% de F1 en la
+época~4 con un valor de $0{,}6565$. Esta aceleración inicial refleja la capacidad del
+\textit{transformer} para reorganizar sus representaciones una vez que el semi-CRF ha aprendido
+a discriminar intervalos de nota de forma básica.
+
+Entre las épocas 5 y 55 las tres métricas progresan de manera
+continua y sin estancamientos. Un rasgo estructural que emerge con claridad en este tramo es la separación persistente
+entre precisión y \textit{recall}: desde la época~5, la precisión se sitúa consistentemente por
+encima del \textit{recall}, con una brecha que oscila entre $0{,}01$ y $0{,}02$ puntos. Este
+patrón indica que el modelo tiende a ser conservador en sus predicciones (prefiere no activar
+una nota antes que activar una incorrecta), lo que desde el punto de vista musical
+se traduce en transcripciones con pocas notas equivocadas pero con un número moderado de notas
+omitidas. Este comportamiento es muy similar al que presentó el modelo MFT-FilM estudiado en el capítulo anterior~\cite{wang2025mftfilm}.
+
+A partir de la época 60, las mejoras se vuelven marginales y las
+tres curvas oscilan dentro de bandas muy estrechas. La precisión se estabiliza en el rango
+$0{,}952$--$0{,}955$, el \textit{recall} en $0{,}919$--$0{,}923$ y el F1 en $0{,}936$--$0{,}939$.
+El valor máximo de F1 de entrenamiento se registra en la época~110, con $0{,}9388$ (precisión
+$0{,}9548$, \textit{recall} $0{,}9234$). La ausencia de crecimiento apreciable en este tramo
+no indica que el modelo haya alcanzado el límite de la tarea, sino que el ritmo de aprendizaje
+del optimizador se ha reducido hasta el punto en que los cambios de parámetros producen
+variaciones por debajo de la resolución estadística del conjunto de entrenamiento.

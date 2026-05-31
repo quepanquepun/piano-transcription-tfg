@@ -135,14 +135,10 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{MusicXML}{\textit{Music Extensible Markup Language}}
 \acronym{FiLM}{\textit{Feature-wise Linear Modulation} (Modulación Lineal por Características)}
 \acronym{FG-LSTM}{\textit{Frequency-Grouped Long Short-Term Memory}}
-\acronym{FT-FiLM}{\textit{Frequency-Time Feature-wise Linear Modulation}}
-\acronym{IFT-FiLM}{\textit{Inter-Task Frequency-Time Feature-wise Linear Modulation}}
 \acronym{JSON}{\textit{JavaScript Object Notation}}
 \acronym{LSTM}{\textit{Long Short-Term Memory}}
 \acronym{MAESTRO}{\textit{MIDI and Audio Edited for Synchronous Tracks and Organization}}
 \acronym{MAPS}{\textit{MIDI Aligned Piano Sounds}}
-\acronym{MEI}{\textit{Music Encoding Initiative}}
-\acronym{MFT-FiLM}{\textit{Multitask Frequency-Time Feature-wise Linear Modulation}}
 \acronym{MIDI}{\textit{Musical Instrument Digital Interface}}
 \acronym{MIR}{\textit{Music Information Retrieval} (Recuperación de Información Musical)}
 \acronym{MTL}{\textit{Multitask Learning} (Aprendizaje Multitarea)}
@@ -154,12 +150,21 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{WAV}{\textit{Waveform Audio File Format}}
 \acronym{BCE}{\textit{Binary Cross-Entropy} (Entropía Cruzada Binaria)}
 \acronym{CCE}{\textit{Categorical Cross-Entropy} (Entropía Cruzada Categórica)}
-\acronym{MAC}{\textit{Multiply–Accumulate} (Operación de Multiplicación-Accumulación)}
 \acronym{ReLU}{\textit{Rectified Linear Unit}}
 \acronym{GELU}{\textit{Gaussian Error Linear Unit}}
-\acronym{SGD}{\textit{Stochastic Gradient Descent} (Descenso de Gradiente Estocástico)}
 \acronym{ECC}{\textit{Error-Correcting Code}}
-\acronym{HPC}{\textit{High-Performance Computing} (Cómputo de Altas Prestaciones)}
+
+\acronym{CRF}{\textit{Conditional Random Field} (Campo Aleatorio Condicional)}
+\acronym{ViT}{\textit{Vision Transformer}}
+\acronym{YOLOS}{\textit{You Only Look at One Sequence}}
+\acronym{RMSNorm}{\textit{Root Mean Square Layer Normalization}}
+\acronym{FFN}{\textit{Feed-Forward Network} (Red Neuronal de Avance)}
+\acronym{MAP}{\textit{Maximum A Posteriori} (Máximo a Posteriori)}
+\acronym{MLE}{\textit{Maximum Likelihood Estimation} (Estimación de Máxima Verosimilitud)}
+\acronym{MLP}{\textit{Multilayer Perceptron} (Perceptrón Multicapa)}
+\acronym{MSE}{\textit{Mean Squared Error} (Error Cuadrático Medio)}
+\acronym{NLL}{\textit{Negative Log-Likelihood} (Log-Verosimilitud Negativa)}
+
 
 
 
@@ -1273,26 +1278,27 @@ picos, modelos de Markov de bajo orden) para recuperar los eventos de nota como 
 discretos~\cite{kwon2020polyphonic}. Por otro lado, hay modelos que tratan de aprender directamente (saltando el \textit{frame level})
 qué intervalos de tiempo corresponden a eventos musicales completos, como presentamos a continuación.
 
-En este proyecto, la segunda alternativa implementada es \textbf{Transkun}
+En este proyecto, la segunda alternativa explorada es \textbf{Transkun}
 (\foreign{english}{Transcription Using Neural semi-CRFs}), propuesto por Yan y
 Duan4~\cite{yan2024transkun}. La idea central
 consiste en tratar cada nota como un intervalo cerrado $[i, j]$ sobre el eje temporal,
 y asignar a cada candidato de intervalo una puntuación escalar que refleje su probabilidad
 de corresponder a un evento real del tipo de evento dado~\cite{yan2024transkun}.
 
-En este capítulo, la Sección~\ref{sec:transkun_arch} describe la arquitectura
-completa del sistema, desde el espectrograma de entrada hasta el transformer
-encoder y los \foreign{english}{event tracks}. La
-Sección~\ref{sec:transkun_scoring} presenta el \textit{framework} semi-CRF y la
-formulación del \foreign{english}{scoring} por producto interior escalado,
-incluyendo su justificación teórica. La
+En este capítulo, la Sección~\ref{sec:transkun_arch} ofrece una visión general de
+la arquitectura del sistema. La Sección~\ref{sec:transkun_input} describe el
+espectrograma de entrada, el submuestreo convolucional y los
+\foreign{english}{event tracks}. A continuación, la Sección~\ref{sec:transkun_encoder} detalla el
+\textit{transformer} encoder no jerárquico. La Sección~\ref{sec:transkun_scoring} presenta
+el \textit{framework} semi-CRF y la formulación del \foreign{english}{scoring} por
+producto interior escalado. La
 Sección~\ref{sec:transkun_attrs} detalla la predicción de atributos por evento y
-la estrategia de procesado por segmentos. En la
-Sección~\ref{sec:transkun_preprocess} se describe el preprocesamiento del
-\textit{dataset} y el desarrollo práctico del entrenamiento en el clúster.
-Finalmente, la Sección~\ref{sec:transkun_resultados} presenta y analiza los
+la estrategia de procesado por segmentos. Después, la
+Sección~\ref{sec:transkunexpresultados} describe el preprocesamiento del
+\textit{dataset}, el entrenamiento en el clúster y presenta y analiza los
 resultados obtenidos, comparando el rendimiento con el estado del arte y con el
-modelo MFT-FiLM.
+modelo MFT-FiLM. Finalmente, la
+Sección~\ref{sec:transkun_conclusiones} recoge las conclusiones del capítulo.
 
 %==============================================================================
 
@@ -1301,17 +1307,10 @@ modelo MFT-FiLM.
 
 La arquitectura de Transkun transforma el espectrograma log-mel de la señal de
 audio en un conjunto de intervalos temporales no solapados, uno por tipo de
-evento, en una única etapa de extremo a extremo. El sistema
-puede dividirse en cinco etapas funcionales que se aprecian en la
-Figura~\ref{fig:transkun_overview}: \textbf{(1)} el cálculo del espectrograma de
-entrada con sobremuestreo de ventanas; \textbf{(2)} el submuestreo convolucional y la
-adición de \textit{embeddings} de posición espacial, en paralelo con la inicialización de los
-\foreign{english}{event tracks}; \textbf{(3)} el procesado conjunto mediante un
-\textit{transformer encoder} no jerárquico; \textbf{(4)} el remuestreo temporal de los
-\foreign{english}{event tracks} y el \foreign{english}{scoring} por producto
-interior; y \textbf{(5)} la decodificación mediante la capa semi-CRF y la
-predicción de atributos. Las secciones siguientes desarrollan cada una de estas
-etapas en detalle.
+evento, en una única etapa de extremo a extremo. La
+Figura~\ref{fig:transkun_overview} ofrece un esquema general de la arquitectura
+que servirá de referencia para las explicaciones sobre este modelo.
+
 
 \begin{figure}[p]
   \centering
@@ -1336,6 +1335,24 @@ etapas en detalle.
   \label{fig:transkun_overview}
 \end{figure}
 
+\clearpage
+
+En la Figura~\ref{fig:transkun_overview} se pueden ver las cinco etapas funcionales que componen el modelo:
+
+\begin{enumerate}
+  \item El cálculo del espectrograma de entrada con sobremuestreo de ventanas.
+  \item El submuestreo convolucional y la adición de \textit{embeddings} de
+        posición espacial, en paralelo con la inicialización de los
+        \foreign{english}{event tracks}.
+  \item El procesado conjunto mediante un \textit{transformer encoder} no
+        jerárquico.
+  \item El remuestreo temporal de los \foreign{english}{event tracks} y el
+        \foreign{english}{scoring} por producto interior.
+  \item La decodificación mediante la capa semi-CRF y la predicción de
+        atributos.
+\end{enumerate}
+
+Las siguientes secciones desarrollan estas etapas en detalle.
 %==============================================================================
 
 \section{Espectrograma de entrada, submuestreo y \textit{event tracks}}
@@ -1888,16 +1905,368 @@ tratamiento produce una degradación notable en las métricas de pedal, con un
 impacto prácticamente nulo en las métricas de notas~\cite{yan2024transkun}.
 
 
-\section{Configuración del experimento}
-\label{sec:transkun_config}
-  
+\section{Experimentos}
+\label{sec:transkunexpresultados}
 
-\section{Preproceso y entrenamiento}
-\label{sec:transkun_preprocess}
+Los experimentos de entrenamiento y evaluación del modelo Transkun se han llevado a cabo en el clúster de cómputo de alto rendimiento del DSIC.
+La descripción detallada del entorno \textit{hardware} y \textit{software}, así como de las dificultades de configuración del entorno y la
+finalización del entrenamiento, se recoge en el Anexo~\ref{anx:transkun_config}.
+
+Antes del entrenamiento, se ejecuta una fase de preprocesamiento del \textit{dataset}. A diferencia del flujo empleado
+en MFT-FiLM, Transkun calcula sus espectrogramas log-mel en tiempo de entrenamiento a partir de los audios originales de
+MAESTRO, sin necesidad de almacenar una caché intermedia de representaciones tiempo--frecuencia. Los archivos MIDI se procesan para generar los conjuntos de intervalos de \textit{ground truth} que alimentan la capa semi-CRF durante el entrenamiento \cite{yan2024transkun}.
+
+A continuación se analizan los resultados obtenidos por el modelo Transkun entrenado sobre MAESTRO~v3.0.0. Las métricas
+empleadas en el conjunto de \textit{test} coinciden con el protocolo estándar descrito en la Sección~\ref{sec:metricas}: precisión, \textit{recall} y F1 a
+nivel de trama y de nota, en sus variantes \textit{Note Onset}, \textit{Note w/~Offset} y \textit{Note w/~Offset~+~Velocity} \cite{yan2024transkun, wang2025mftfilm}. Para garantizar la comparabilidad directa con el trabajo original, las predicciones se obtienen con los parámetros de inferencia predeterminados del repositorio de referencia.
+
+Comenzamos con los datos obtenidos durante el entrenamiento del modelo. La Figura~\ref{fig:transkunlossprimeraepoca} muestra
+la evolución lote a lote de la función de pérdida durante la primera época de entrenamiento del modelo Transkun sobre MAESTRO~v3.0.0. Su
+análisis permite verificar que la red neuronal arranca correctamente y que el mecanismo de optimización responde de forma adecuada desde
+el primer instante en que el modelo comienza a procesar datos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figuras/1_loss_primera_epoca.png}
+    \caption[Pérdida durante la primera época de entrenamiento de Transkun]{
+        Evolución de la función de pérdida de entrenamiento (\textit{Train Loss}) lote a lote
+        durante la primera época (época~0) del modelo Transkun. El eje horizontal representa el
+        índice de lote procesado de forma secuencial y el eje vertical el valor instantáneo de
+        la pérdida \textit{meanNLL} calculado sobre ese lote. Se aprecia una caída abrupta en los
+        primeros 160~lotes (desde valores próximos a 6000 hasta el entorno de 1200), seguida
+        de una fase de oscilación ruidosa con tendencia decreciente sostenida que lleva la pérdida
+        hasta valores en torno a 290--340 al final de la época.}
+    \label{fig:transkunlossprimeraepoca}
+\end{figure}
+
+La curva de la Figura~\ref{fig:transkunlossprimeraepoca} muestra el comportamiento típico de un \textit{transformer} con pesos
+inicializados aleatoriamente: una caída inicial muy pronunciada en los primeros lotes, característica de modelos que parten de
+predicciones casi uniformes sobre el espacio de intervalos del semi-CRF y donde cualquier ajuste de parámetros produce una ganancia inmediata y elevada en la verosimilitud, seguida de un descenso progresivo pero ruidoso. Las oscilaciones de amplitud considerable son el comportamiento esperado cuando se entrena con lotes de tamaño moderado, pues la dificultad intrínseca de cada lote varía según la densidad polifónica y el \textit{tempo} de la interpretación, introduciendo varianza natural en la estimación del gradiente. A lo largo de toda la época, la tendencia decreciente se mantiene sin señales de estancamiento ni de divergencia. Cabe destacar que la magnitud absoluta de la pérdida es intrínseca a la función objetivo de Transkun: a diferencia de la suma de entropías cruzadas binarias empleada en MFT-FiLM, el \textit{meanNLL} del semi-CRF normaliza sobre el espacio de todos los conjuntos de intervalos no solapados posibles, por lo que sus valores no son directamente comparables en escala con los del capítulo anterior.
+
+Continuamos con la pérdida general. La Figura~\ref{fig:transkunlosstrainval} presenta la evolución de la función de pérdida a
+lo largo de las 112~épocas completas de entrenamiento, comparando el error cometido sobre el conjunto de entrenamiento (\textit{Train Loss},
+media del \textit{meanNLL} por época) con el error sobre el conjunto de validación (\textit{Val meanNLL}). Esta gráfica constituye la
+referencia principal para analizar la dinámica de aprendizaje global del modelo y detectar la presencia de sobreajuste (\textit{overfitting}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figuras/2_loss_train_val.png}
+    \caption[Evolución de la pérdida de entrenamiento y validación de Transkun]{
+        Evolución de la pérdida de entrenamiento (\textit{Train Loss}) y de validación
+        (\textit{Val meanNLL}) por época a lo largo de las 112~épocas de entrenamiento del
+        modelo Transkun sobre MAESTRO~v3.0.0. El eje horizontal representa la época y el eje
+        vertical el valor medio del \textit{meanNLL} calculado sobre el conjunto correspondiente.
+        Ambas curvas parten de valores elevados en las primeras épocas y descienden de forma
+        pronunciada hasta aproximadamente la época~40, tras la cual la pérdida de entrenamiento
+        continúa disminuyendo lentamente mientras la de validación se estabiliza.}
+    \label{fig:transkunlosstrainval}
+\end{figure}
+
+En la Figura~\ref{fig:transkunlosstrainval} se observa que ambas curvas descienden de forma casi exponencial durante las
+primeras épocas. En este tramo inicial, la pérdida de validación se mantiene sistemáticamente por debajo de la de entrenamiento,
+comportamiento habitual en modelos con \textit{dropout} activo: las máscaras aleatorias inflan la estimación del \textit{meanNLL}
+sobre el conjunto de entrenamiento, mientras que durante la validación el modelo opera con todos sus pesos activos. A medida que el
+entrenamiento avanza, las dos curvas invierten su posición relativa (señal de que el modelo ha comenzado a ajustarse a las
+particularidades del conjunto de entrenamiento) y continúan descendiendo de forma cada vez más gradual. La pérdida de validación
+alcanza su mínimo en torno a la época~72 y a partir de ahí se estabiliza oscilando en una banda estrecha, mientras la pérdida de
+entrenamiento sigue disminuyendo muy lentamente describiendo una asíntota práctica. No se aprecia sobreajuste severo: la brecha entre
+ambas curvas crece de forma moderada y la validación no muestra tendencia creciente en ningún momento del entrenamiento.
+
+Además de la función de pérdida principal, durante el entrenamiento se monitoriza la capacidad del modelo para estimar la
+velocidad MIDI y el \textit{offset} de cada nota. La calidad de estas dos métricas se evalúa mediante el error cuadrático
+medio (\textit{Mean Squared Error}, MSE) calculado por época. Dado que ambas magnitudes operan en escalas muy distintas
+(la velocidad se expresa en unidades MIDI al cuadrado y el \textit{offset} en segundos al cuadrado), se presentan en dos
+gráficas separadas, Figuras~\ref{fig:transkuntrainerrvel} y~\ref{fig:transkuntrainerroff}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figuras/5a_train_error_velocity.png}
+    \caption[MSE de velocidad sobre entrenamiento de Transkun]{
+        Evolución del error cuadrático medio (\textit{MSE}) de la estimación de velocidad MIDI
+        sobre el conjunto de entrenamiento a lo largo de las 112~épocas del modelo Transkun.
+        El eje horizontal representa la época y el eje vertical el MSE en unidades MIDI$^2$.
+        La curva parte de un valor de $533{,}93$ en la época~0 y desciende de forma pronunciada
+        durante las primeras épocas, estabilizándose progresivamente en torno a $10$--$11$
+        unidades MIDI$^2$ a partir de la época~70, con oscilaciones crecientes en la segunda
+        mitad del entrenamiento que reflejan la variabilidad intrínseca de la dinámica entre
+        piezas del conjunto de entrenamiento.}
+    \label{fig:transkuntrainerrvel}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figuras/5b_train_error_offset.png}
+    \caption[MSE de \textit{offset} sobre entrenamiento de Transkun]{
+        Evolución del error cuadrático medio (\textit{MSE}) de la estimación del instante de
+        \textit{offset} sobre el conjunto de entrenamiento a lo largo de las 112~épocas del
+        modelo Transkun. El eje horizontal representa la época y el eje vertical el MSE en
+        segundos$^2$. La curva desciende de forma suave y continua desde $0{,}1593$~s$^2$ en
+        la época~0 hasta $0{,}0663$~s$^2$ en la época~110, mostrando una reducción del 58\,\%
+        sin signos de estancamiento a lo largo de todo el entrenamiento.}
+    \label{fig:transkuntrainerroff}
+\end{figure}
+
+El análisis conjunto de ambas figuras revela comportamientos cualitativamente distintos para cada uno de
+los dos atributos. El MSE de velocidad (Figura~\ref{fig:transkuntrainerrvel}) presenta la caída más pronunciada del
+entrenamiento, con una reducción superior al 90\,\% en las primeras épocas que evidencia que el \textit{Attribute MLP}
+adquiere rápidamente la capacidad de estimar el orden de magnitud de la dinámica de cada nota. Esto se explica por la
+naturaleza del regresor: la red aprende a evitar predicciones de velocidad extremas o uniformes y converge rápidamente hacia
+la media estadística del dataset. A partir de entonces, la curva se estabiliza en una banda estrecha sin tendencia decreciente
+clara, lo que indica que el modelo ha alcanzado el límite de lo que puede aprender sobre la dinámica de las interpretaciones a
+partir de la representación espectral de entrada. El MSE de \textit{offset} (Figura~\ref{fig:transkuntrainerroff}), en cambio,
+muestra un comportamiento radicalmente diferente: desciende de forma lenta, suave y prácticamente monótona durante todo el
+entrenamiento, sin saturarse en ningún momento. Este contraste pone de manifiesto que la estimación del instante de
+finalización de una nota es intrínsecamente más compleja: a diferencia del \textit{onset}, el \textit{offset} depende del
+uso del pedal de \textit{sustain}, de la resonancia del instrumento y de la decisión interpretativa del pianista, factores
+difíciles de inferir a partir del espectrograma.
+
+Como último análisis de indicadores durante el entrenamiento, la Figura~\ref{fig:transkunvalmetrics} presenta la evolución
+de las métricas de validación del modelo. La métrica reportada es la \textit{Note w/~Offset} (precisión, \textit{recall} y F1), que
+exige tanto la detección correcta del \textit{onset} como la estimación del \textit{offset} dentro de la tolerancia definida por el
+protocolo \texttt{mir\_eval}, y representa un criterio de evaluación más exigente que el simple \textit{Note Onset} (véase Sección~\ref{sec:metricas}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figuras/6_val_metrics.png}
+    \caption[Métricas \textit{Note w/ Offset} de validación de Transkun]{
+        Evolución de la precisión, \textit{recall} y F1 de la métrica \textit{Note w/~Offset}
+        sobre el conjunto de validación a lo largo de las 112~épocas del modelo Transkun. El eje
+        horizontal representa la época y el eje vertical la puntuación en el rango $[0, 1]$.
+        Las tres métricas ascienden rápidamente durante las primeras épocas, superan $0{,}90$ de
+        F1 en la época~54 y se estabilizan en una banda estrecha en torno a $0{,}906$--$0{,}908$
+        a partir de la época~79, sin tendencia decreciente apreciable hasta el final del
+        entrenamiento. La precisión se mantiene de forma consistente por encima del \textit{recall}
+        a lo largo de todo el proceso.}
+    \label{fig:transkunvalmetrics}
+\end{figure}
+
+En la Figura~\ref{fig:transkunvalmetrics} se aprecia que el F1 de validación asciende de forma casi exponencial
+durante las primeras épocas, lo que confirma que el modelo construye representaciones genuinamente generalizables
+desde el primer momento. En este tramo inicial, la precisión crece más lentamente que el \textit{recall}, indicando
+que el modelo aprende primero a activar los intervalos de nota correctos antes de suprimir las predicciones erróneas;
+a partir de la época~10 esta relación se invierte de forma estable, consolidando un sesgo conservador análogo al
+observado en MFT-FiLM~\cite{wang2025mftfilm}: el modelo prefiere omitir notas antes que predecir notas incorrectas.
+La mejora continúa de forma sostenida hasta superar el 90\,\% de F1, en coherencia con el descenso prolongado del MSE
+de \textit{offset} de la Figura~\ref{fig:transkuntrainerroff}, y la brecha entre precisión y \textit{recall} se estrecha
+progresivamente a medida que el modelo aprende a detectar notas de mayor dificultad. A partir de ese punto, el F1 entra
+en un régimen de oscilación estable sin tendencia creciente apreciable, con un máximo absoluto registrado en la época~110. Esta
+compresión del rango de variación indica que el modelo está muy cerca de su límite de generalización y que épocas adicionales no
+producirían mejoras significativas. La elección del \textit{checkpoint} final para la evaluación sobre el conjunto de test queda
+plenamente justificada: la curva de validación no muestra ningún indicio de degradación que aconseje una parada anticipada.
+
+A continuación se analizan los resultados finales obtenidos por el modelo.
+Las Tablas~\ref{tab:transkun_maestro_v3}, \ref{tab:transkun_maestro_prec} 
+y~\ref{tab:transkun_maestro_rec} recogen los resultados de evaluación del modelo 
+Transkun entrenado en este trabajo sobre el conjunto de \textit{test} de MAESTRO 
+v3.0.0, junto con los valores reportados por los autores del artículo 
+original~\cite{yan2024transkun} y los obtenidos en el capítulo anterior por el 
+modelo MFT-FiLM. Se presentan, respectivamente, las puntuaciones $F_1$, la 
+precisión y el \textit{recall}, tanto a nivel de trama como a nivel de nota, en 
+sus tres variantes de complejidad creciente.
+
+\begin{table}[H]
+  \centering
+  \caption[Resultados del $F_1$ de Transkun sobre MAESTRO v3.0.0]{%
+  Resultados de transcripción de notas sobre MAESTRO v3.0.0. 
+  Se muestran el número de parámetros y las puntuaciones $F_1$ a nivel de trama 
+  (\textit{Frame}) y de nota (\textit{Note On.}, \textit{Note w/ Off.}, 
+  \textit{Note w/ Off. \& Vel.}). Todas las métricas se expresan en porcentaje (\%).}
+  \label{tab:transkun_maestro_v3}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{lccccc}
+    \hline
+    \textbf{Modelo} &
+    \textbf{Parámetros} &
+    \textbf{Frame $F_1$} &
+    \textbf{On. $F_1$} &
+    \textbf{On.+Off. $F_1$} &
+    \textbf{On.+Off.+Vel. $F_1$} \\
+    \hline
+    Transformer~\cite{hawthorne2021seq2seq}   & 54\,M   & ---   & 96.01 & 83.94 & 82.75 \\
+    SemiCRF~\cite{yan2021semicrf1}            & 9\,M    & 90.75 & 96.11 & 88.42 & 87.44 \\
+    HPPNet~\cite{wei2022hppnet}               & 1.2\,M  & 93.15 & 97.18 & 83.80 & 82.24 \\
+    hFT-Transformer~\cite{toyama2023hftt}     & 5.5\,M  & 93.24 & 97.44 & 90.53 & 89.48 \\
+    HATANet~\cite{wang2024hatanet}            & 6.4\,M  & 94.04 & 97.81 & 90.57 & 89.25 \\
+    \hline
+    MFT-FiLM (autores)~\cite{wang2025mftfilm} & 1.2\,M & 94.75 & 98.39 & 92.46 & 91.79 \\
+    \textbf{MFT-FiLM (este trabajo)}          & 1.2\,M & 94.36 & 98.17 & 91.60 & 90.78 \\
+    \hline
+    Transkun / SemiCRF~V2 (autores)~\cite{yan2024transkun} & 12.9\,M & 95.35 & 98.32 & 93.48 & 92.94 \\
+    \textbf{Transkun (este trabajo)}                        & 12.9\,M & 94.69 & 98.03 & 92.06 & 91.52 \\
+    \hline
+  \end{tabular}}
+\end{table}
+
+En la Tabla~\ref{tab:transkun_maestro_v3} se aprecia que la reproducción de 
+Transkun alcanza un $F_1$ de trama del $94{,}69\%$, frente al $95{,}35\%$ 
+reportado por los autores, lo que representa una diferencia de $0{,}66$ puntos 
+porcentuales. En las métricas de nota, la brecha es de magnitud similar: el $F_1$ 
+de \textit{Note On.} se sitúa en $98{,}03\%$ frente al $98{,}32\%$ original, 
+mientras que en \textit{Note w/ Off.} y \textit{Note w/ Off. \& Vel.} los valores 
+obtenidos son $92{,}06\%$ y $91{,}52\%$, frente a $93{,}48\%$ y $92{,}94\%$ 
+respectivamente. Estas diferencias son atribuibles a la detención anticipada del 
+entrenamiento por limitaciones de cómputo y tiempo: aunque las métricas de 
+validación a nivel de nota mostraban una mejora prácticamente negligible en las 
+últimas épocas, otras métricas intermedias, como el MSE del \textit{offset}, 
+presentaban todavía una tendencia decreciente apreciable en las curvas de 
+entrenamiento, lo que indica que el modelo no había alcanzado su convergencia 
+completa.
+
+En comparación con el modelo MFT-FiLM entrenado en el capítulo anterior, la 
+reproducción de Transkun obtiene resultados superiores en practicamente todas las métricas.
+La única excepción es el $F_1$ de \textit{Note On.}, donde 
+MFT-FiLM alcanza $98{,}17\%$ frente a $98{,}03\%$ de Transkun, una diferencia 
+de tan solo $0{,}14$ puntos porcentuales que puede considerarse marginal. En el 
+resto de métricas, Transkun supera a MFT-FiLM en $0{,}33$ puntos en \textit{Frame}, 
+en $0{,}46$ puntos en \textit{Note w/ Off.} y en $0{,}74$ puntos en 
+\textit{Note w/ Off. \& Vel.}. Siendo esta última la métrica más representativa 
+de la calidad de una transcripción completa (debido a que incorpora la evaluación 
+conjunta del tono, el inicio, la duración y la dinámica de cada nota) puede 
+concluirse que Transkun ofrece en términos generales una transcripción de mayor 
+calidad que MFT-FiLM. Esta ventaja se obtiene, sin embargo, a costa de un coste computacional 
+considerablemente mayor: con $12{,}9\,\text{M}$ de parámetros frente a los 
+$1{,}2\,\text{M}$ del MFT-FiLM, el entrenamiento de Transkun fue notablemente 
+más extenso en duración y en recursos, consecuencia directa de la mayor 
+complejidad de su arquitectura \textit{transformer} y del esquema de 
+decodificación secuencia a secuencia que emplea.
+
+\begin{table}[H]
+  \centering
+  \caption[Resultados de la precisión de Transkun sobre MAESTRO v3.0.0]{%
+  Resultados de precisión (\textit{P}) de transcripción de notas sobre MAESTRO v3.0.0.
+  Se muestran el número de parámetros y las métricas de precisión a nivel de trama
+  (\textit{Frame}) y de nota (\textit{Note On.}, \textit{Note w/ Off.},
+  \textit{Note w/ Off. \& Vel.}). Todas las métricas se expresan en porcentaje (\%).}
+  \label{tab:transkun_maestro_prec}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{lccccc}
+    \hline
+    \textbf{Modelo} &
+    \textbf{Parámetros} &
+    \textbf{Frame P} &
+    \textbf{On. P} &
+    \textbf{On.+Off. P} &
+    \textbf{On.+Off.+Vel. P} \\
+    \hline
+    Transformer~\cite{hawthorne2021seq2seq}   & 54\,M   & ---   & 98.61 & 86.19 & 84.95 \\
+    SemiCRF~\cite{yan2021semicrf1}            & 9\,M    & 93.79 & 98.69 & 90.79 & 89.78 \\
+    HPPNet~\cite{wei2022hppnet}               & 1.2\,M  & 92.79 & 98.45 & 84.88 & 83.29 \\
+    hFT-Transformer~\cite{toyama2023hftt}     & 5.5\,M  & 92.82 & 99.64 & 92.52 & 91.43 \\
+    HATANet~\cite{wang2024hatanet}            & 6.4\,M  & 95.51 & 99.05 & 91.70 & 90.35 \\
+    \hline
+    MFT-FiLM (autores)~\cite{wang2025mftfilm} & 1.2\,M & 95.77 & 99.33 & 93.33 & 92.65 \\
+    \textbf{MFT-FiLM (este trabajo)}          & 1.2\,M & 95.27 & 99.37 & 92.70 & 91.86 \\
+    \hline
+    Transkun / SemiCRF~V2 (autores)~\cite{yan2024transkun} & 12.9\,M & 95.75 & 99.53 & 94.61 & 94.07 \\
+    \textbf{Transkun (este trabajo)}                        & 12.9\,M & 95.21 & 99.68 & 93.58 & 93.03 \\
+    \hline
+  \end{tabular}}
+\end{table}
 
 
-\section{Resultados}
-\label{sec:transkun_resultados}
+\begin{table}[H]
+  \centering
+  \caption[Resultados del \textit{recall} de Transkun sobre MAESTRO v3.0.0]{%
+  Resultados del \textit{recall} (\textit{R}) en transcripción de notas sobre MAESTRO v3.0.0.
+  Se muestran el número de parámetros y las métricas de \textit{recall} a nivel de trama
+  (\textit{Frame}) y de nota (\textit{Note On.}, \textit{Note w/ Off.},
+  \textit{Note w/ Off. \& Vel.}). Todas las métricas se expresan en porcentaje (\%).}
+  \label{tab:transkun_maestro_rec}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{lccccc}
+    \hline
+    \textbf{Modelo} &
+    \textbf{Parámetros} &
+    \textbf{Frame R} &
+    \textbf{On. R} &
+    \textbf{On.+Off. R} &
+    \textbf{On.+Off.+Vel. R} \\
+    \hline
+    Transformer~\cite{hawthorne2021seq2seq}   & 54\,M   & ---   & 93.60 & 81.86 & 80.70 \\
+    SemiCRF~\cite{yan2021semicrf1}            & 9\,M    & 88.36 & 93.96 & 86.46 & 85.51 \\
+    HPPNet~\cite{wei2022hppnet}               & 1.2\,M  & 93.59 & 95.95 & 82.76 & 81.24 \\
+    hFT-Transformer~\cite{toyama2023hftt}     & 5.5\,M  & 93.66 & 95.44 & 88.69 & 87.67 \\
+    HATANet~\cite{wang2024hatanet}            & 6.4\,M  & 92.62 & 96.61 & 89.47 & 88.17 \\
+    \hline
+    MFT-FiLM (autores)~\cite{wang2025mftfilm} & 1.2\,M & 93.84 & 97.48 & 91.62 & 90.95 \\
+    \textbf{MFT-FiLM (este trabajo)}          & 1.2\,M & 93.56 & 97.03 & 90.54 & 89.73 \\
+    \hline
+    Transkun / SemiCRF~V2 (autores)~\cite{yan2024transkun} & 12.9\,M & 95.01 & 97.16 & 92.39 & 91.87 \\
+    \textbf{Transkun (este trabajo)}                        & 12.9\,M & 94.69 & 96.48 & 90.62 & 90.10 \\
+    \hline
+  \end{tabular}}
+\end{table}
+
+Las Tablas~\ref{tab:transkun_maestro_prec} y~\ref{tab:transkun_maestro_rec} 
+permiten profundizar en el análisis desagregando la $F_1$ en sus componentes de 
+precisión y \textit{recall}. En la métrica de \textit{Note On.}, la precisión 
+obtenida en este trabajo es de $99{,}68\%$, superando incluso al valor reportado 
+por los autores originales ($99{,}53\%$), mientras que el \textit{recall} 
+correspondiente se sitúa en $96{,}48\%$, $0{,}68$ puntos por debajo del original 
+($97{,}16\%$). Este desequilibrio entre precisión y \textit{recall} indica que 
+la mayor parte de los errores residuales consisten en notas omitidas (especialmente 
+en pasajes de elevada densidad polifónica o con articulaciones rápidas) y no en 
+activaciones espurias, lo que apunta a un comportamiento conservador del modelo 
+coherente con los resultados presentados previamente. En las métricas que 
+incorporan el \textit{offset} y la velocidad, tanto la precisión como el 
+\textit{recall} descienden moderadamente respecto a los valores de \textit{onset}, 
+siguiendo el patrón habitual observado tanto en MFT-FiLM como en el resto de 
+modelos del estado del arte. La precisión de \textit{Note w/ Off. \& Vel.} alcanza 
+$93{,}03\%$ frente al $94{,}07\%$ de los autores, y el \textit{recall} 
+correspondiente es de $90{,}10\%$ frente al $91{,}87\%$ original. La penalización 
+proporcionalmente mayor en \textit{recall} respecto a la precisión sugiere que las 
+discrepancias se concentran principalmente en la estimación de la duración de las 
+notas, subtarea sobre la que la detención anticipada del entrenamiento habría tenido 
+un impacto más directo, en consonancia con la evolución todavía decreciente del 
+MSE de \textit{offset} observada en las gráficas de entrenamiento.
+
+
+\section{Conclusiones}
+\label{sec:transkun_conclusiones}
+
+Este capítulo ha presentado la reproducción y evaluación del modelo 
+Transkun~\cite{yan2024transkun} sobre el conjunto de \textit{test} de MAESTRO 
+v3.0.0, siguiendo el protocolo estándar de evaluación descrito en la 
+Sección~\ref{sec:metricas}. El modelo, basado en una arquitectura 
+\textit{transformer} que aborda la transcripción como un problema de traducción 
+de secuencias, ha sido entrenado hasta su detención anticipada por limitaciones 
+de cómputo y tiempo, si bien las métricas de validación a nivel de nota mostraban 
+una convergencia prácticamente estable en las últimas épocas.
+
+Los resultados obtenidos se sitúan entre $0{,}66$ y $1{,}42$ puntos porcentuales 
+por debajo de los reportados por los autores originales en $F_1$, diferencia 
+atribuible principalmente al entrenamiento incompleto, cuyo impacto es más 
+pronunciado en las métricas de \textit{offset} y velocidad que en las de 
+\textit{onset}, en consonancia con la evolución todavía decreciente del MSE de 
+\textit{offset} observada en las curvas de entrenamiento. A pesar de ello, la 
+reproducción supera en precisión de \textit{Note On.} al propio valor original 
+($99{,}68\%$ frente a $99{,}53\%$), lo que confirma la robustez del 
+entrenamiento realizado.
+
+En comparación con el modelo MFT-FiLM reproducido en el capítulo anterior, 
+Transkun obtiene resultados superiores en la mayoría de las métricas, 
+siendo la única excepción el $F_1$ de \textit{Note On.}, donde la diferencia es 
+marginal. Atendiendo a la métrica más representativa de la calidad de una 
+transcripción completa ()\textit{Note w/ Off. \& Vel.} $F_1$) Transkun 
+($91{,}52\%$) supera a MFT-FiLM ($90{,}78\%$), si bien esta ventaja se 
+obtiene por un número de parámetros aproximadamente 10 veces superior y de un 
+entrenamiento notablemente más costoso en tiempo y recursos computacionales.
+
+Finalmente, ambos modelos (Transkun y MFT-FiLM) se posicionan por 
+encima de todos los modelos de referencia incluidos en la comparativa en las 
+métricas más exigentes, superando a Transformer~\cite{hawthorne2021seq2seq}, 
+SemiCRF~\cite{yan2021semicrf1}, HPPNet~\cite{wei2022hppnet}, 
+hFT-Transformer~\cite{toyama2023hftt} y HATANet~\cite{wang2024hatanet} en 
+\textit{Note w/ Off.} y \textit{Note w/ Off. \& Vel.}. Esto confirma que ambos 
+modelos, evaluados sobre repertorio de música clásica occidental, 
+representan fielmente el estado del arte en transcripción automática de piano.
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                 CONCLUSIONS                                 %
@@ -2214,6 +2583,119 @@ y el del MIDI, garantizando que las representaciones de entrada y las etiquetas
 de salida estén correctamente sincronizadas y sean comparables con las del
 trabajo original.
 
+
+\chapter{Configuración del experimento Transkun}
+\label{anx:transkun_config}
+
+\section{Entorno de ejecución y dependencias}
+
+El entrenamiento del modelo Transkun se llevó a cabo en el clúster de cómputo
+de alto rendimiento \textbf{tensor}, perteneciente al Departamento de Sistemas
+Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia.
+Dado que las características generales del clúster ya se describen en el
+Anexo~\ref{anx:mft_config}, en este anexo se recogen únicamente los aspectos
+específicos necesarios para reproducir el experimento con Transkun.
+
+El entrenamiento se ejecutó sobre una única GPU \textbf{NVIDIA L40S} de
+$48\,\text{GB}$ mediante el gestor de colas \textbf{SLURM}, empleando la cola
+\texttt{long}. El artículo original de Transkun emplea dos GPUs NVIDIA
+RTX~4090; en este trabajo se utilizó una sola GPU L40S, lo que permitió alojar
+el modelo con el tamaño de lote requerido, aunque a costa de un mayor tiempo de
+entrenamiento efectivo.
+
+El entorno software se configuró en un entorno virtual de Python con
+\texttt{PyTorch}, \texttt{Torch\-Audio}, \texttt{moduleconf},
+\texttt{adabelief-pytorch}, \texttt{mir\_eval}, \texttt{tqdm} y las
+dependencias propias del repositorio original. Para evitar inconsistencias entre
+el paquete instalado mediante \texttt{pip} y el código fuente del repositorio,
+la ejecución se realizó siempre desde la copia local de Transkun.
+
+Durante la preparación del entorno surgieron dos incidencias relevantes. En
+primer lugar, se detectó una incompatibilidad entre las versiones de CUDA con
+las que habían sido compilados \texttt{PyTorch} y \texttt{TorchAudio}. El
+problema se resolvió reinstalando \texttt{TorchAudio} desde el índice oficial
+de PyTorch correspondiente a la misma versión CUDA que \texttt{Py\-Torch}. En
+segundo lugar, fue necesario adaptar una llamada al \texttt{DataLoader} de
+PyTorch, sustituyendo el argumento obsoleto o incorrecto
+\texttt{dropout\_last} por \texttt{drop\_last}, compatible con la API actual.
+
+\section{Preparación del conjunto MAESTRO}
+
+El experimento se realizó sobre \textbf{MAESTRO v3.0.0}. Antes del
+entrenamiento se generaron los archivos de metadatos requeridos por Transkun:
+\texttt{train.pickle}, \texttt{val.pickle} y \texttt{test.pickle}. Estos
+ficheros contienen la información necesaria para indexar las piezas musicales y
+sus correspondientes anotaciones MIDI.
+
+Durante la carga del conjunto de entrenamiento, Transkun registró un total de
+\textbf{962 piezas} en el subconjunto de entrenamiento, con una duración
+acumulada de aproximadamente \textbf{573277 segundos}, equivalentes a unas
+\textbf{159 horas} de audio. El subconjunto de validación contenía
+\textbf{137 piezas}, con una duración aproximada de \textbf{69946 segundos}.
+Estos valores corresponden al número de piezas indexadas, no al número de
+segmentos temporales utilizados internamente durante el entrenamiento.
+
+Como parte de la preparación de los datos, se verificó que los audios estuvieran
+disponibles en formato \texttt{wav} y a la frecuencia de muestreo esperada por
+la configuración del modelo, \textbf{44100 Hz}. Además, se homogeneizó la
+lectura de audio para evitar la mezcla de señales mono y estéreo dentro de un
+mismo lote. Para ello, las señales estéreo se convirtieron a mono durante la
+carga, promediando ambos canales. Esta operación garantiza que todos los
+fragmentos procesados por el \texttt{DataLoader} tengan una forma compatible.
+
+\section{Configuración del modelo y del entrenamiento}
+
+La arquitectura de Transkun se definió mediante el fichero \texttt{conf.json},
+generado a partir de la clase \texttt{transkun.ModelTransformer}. Este fichero
+contiene únicamente la configuración estructural del modelo; los
+hiperparámetros de entrenamiento se especifican como argumentos del módulo
+\texttt{transkun.train}.
+
+La configuración inicial generada por defecto era distinta a la empleada
+por los autores. Para aproximar el experimento a la configuración del artículo
+original se ajustaron los parámetros como se presentan en la Tabla~\ref{tab:transkun_config}.
+
+\begin{table}[H]
+  \centering
+  \caption{Parámetros principales de configuración empleados en el experimento
+  Transkun.}
+  \label{tab:transkun_config}
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Parámetro} & \textbf{Valor} & \textbf{Descripción} \\
+    \hline
+    \texttt{fs}                         & 44100 & Frecuencia de muestreo \\
+    \texttt{n\_mels}                    & 229   & Número de bandas mel \\
+    \texttt{segmentSizeInSecond}        & 16    & Duración del segmento de entrada \\
+    \texttt{segmentHopSizeInSecond}     & 8     & Salto entre segmentos \\
+    \texttt{windowSize}                 & 4096  & Tamaño de ventana espectral \\
+    \texttt{hopSize}                    & 1024  & Salto entre ventanas \\
+    \texttt{baseSize}                   & 64    & Tamaño base de representación \\
+    \texttt{nHead}                      & 8     & Cabezas de atención \\
+    \texttt{fourierSize}                & 256   & Tamaño de características Fourier \\
+    \texttt{nLayers}                    & 6     & Capas del transformador \\
+    \texttt{enabledAttn}                & \texttt{F,T} & Atención en frecuencia y tiempo \\
+    \texttt{--batchSize}                & 12    & Segmentos por lote \\
+    \texttt{--nIter}                    & 500000 & Iteraciones máximas planificadas \\
+    \texttt{--max\_lr}                  & $4\cdot10^{-4}$ & Tasa máxima de aprendizaje \\
+    \texttt{--weight\_decay}            & $10^{-2}$ & Decaimiento de pesos \\
+    \texttt{--gradClippingQuantile}     & 0{,}8 & Recorte adaptativo del gradiente \\
+    \hline
+  \end{tabular}
+\end{table}
+
+El trabajo de entrenamiento se lanzó mediante un script de \texttt{SLURM} que
+reservaba una GPU completa, necesaria para alojar el modelo. El fichero de salida del modelo, \texttt{model.pt}, se utilizó
+también como punto de guardado para permitir la reanudación del entrenamiento
+en caso de interrupción por el límite temporal de la cola.
+
+Aunque la configuración establecía un máximo de 500000 iteraciones, el
+entrenamiento se detuvo cuando los \textit{checkpoints} evaluados alcanzaron
+métricas competitivas para los objetivos del trabajo. La evolución de las
+métricas sugería que aún podía existir cierto margen de mejora con más tiempo
+de entrenamiento; sin embargo, se optó por detener la ejecución para evitar un
+uso prolongado de una GPU completa en un clúster de uso compartido. El modelo empleado en los resultados corresponde, por tanto, al
+mejor \textit{checkpoint} evaluado antes de dicha parada.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
