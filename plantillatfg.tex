@@ -41,6 +41,7 @@
 %                                          (aquesta seccio pot ser buida)     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{graphicx}
+\usepackage{multirow}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{array}
@@ -143,7 +144,7 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{MIR}{\textit{Music Information Retrieval} (Recuperación de Información Musical)}
 \acronym{MTL}{\textit{Multitask Learning} (Aprendizaje Multitarea)}
 \acronym{PCM}{\textit{Pulse Code Modulation} (Modulación por Impulsos Codificados)}
-\acronym{PiJAMA}{\textit{Piano \textit{jazz} with Automatic MIDI Annotations}}
+\acronym{PiJAMA}{\textit{Piano jazz with Automatic MIDI Annotations}}
 \acronym{SLURM}{\textit{Simple Linux Utility for Resource Management}}
 \acronym{STFT}{\textit{Short-Time Fourier Transform} (Transformada de Fourier de Tiempo Corto)}
 \acronym{VRAM}{\textit{Video Random Access Memory}}
@@ -165,6 +166,8 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{MSE}{\textit{Mean Squared Error} (Error Cuadrático Medio)}
 \acronym{NLL}{\textit{Negative Log-Likelihood} (Log-Verosimilitud Negativa)}
 
+\acronym{LSD}{\textit{Least Significant Difference} (Diferencia Mínima Significativa)}
+
 
 
 
@@ -180,23 +183,27 @@ Additionally, the generalization capability of both models is evaluated on the P
 
 \chapter{Introducción}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+%===============================================================================
 
 \section{Motivación}
 
-????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+%===============================================================================
 
 \section{Objetivos}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%===============================================================================
 
 \section{Estructura de la memoria}
 
-????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+
+%===============================================================================
 
 %\section{Notes bibliografiques} %%%%% Opcional
 
-%????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
+%===============================================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                         CAPITOLS (tants com calga)                          %
@@ -204,12 +211,61 @@ Additionally, the generalization capability of both models is evaluated on the P
 
 \chapter{Preliminares}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+
 %==============================================================================
 
-\section{?? ???? ???? ? ?? ??}
+\section{MIDI2ScoreTransformer}
+\label{sec:midi2scoretransformer}
 
-????? ????????????? ????????????? ????????????? ????????????? ?????????????
+\paragraph{Herramienta \textit{midi2scoreTransformer}.}
+La herramienta \textit{midi2scoreTransformer}~\cite{beyer2024midi2score} realiza la conversión automática de archivos \emph{performance MIDI} a partituras legibles
+en formato MusicXML mediante un modelo \textit{transformer} \emph{encoder--decoder} especializado. Su objetivo es transformar una secuencia de
+notas cruda, descrita únicamente por altura, tiempos de inicio y fin y velocidad, en una notación musical compacta y clara, similar a
+la que produciría un copista humano. En el contexto de este TFG, \textit{midi2scoreTransformer} se emplea como etapa de postprocesado de
+los sistemas de transcripción automática de piano: a partir de las salidas en formato MIDI de interpretación, se generan partituras MusicXML
+que facilitan el análisis visual y la discusión de resultados por parte de lectores no especialistas en MIR o procesamiento de audio.
+
+Para poder aplicar un \textit{transformer} de forma eficiente, el sistema introduce un esquema de tokenización paralelo tanto para la entrada
+(performance MIDI) como para la salida (MusicXML)~\cite{beyer2024midi2score}. En la entrada, cada nota se representa mediante cuatro flujos de tokens que codifican
+la altura MIDI, el instante de inicio, la duración (ambos cuantizados mediante \emph{buckets} con transformación logarítmica) y la velocidad,
+lo que reduce la longitud de secuencia manteniendo la información relevante. En la salida, el modelo predice desde cero una secuencia de notas
+de partitura enriquecida con múltiples atributos: altura y tiempo musical cuantizados dentro del compás, duración musical, información
+estructural (mano o pentagrama, número de voz, dirección de plica, alteraciones) y detalles interpretativos como staccatos, notas de adorno
+y trinos. Esta representación paralela permite que cada nota ocupe un único paso temporal, y combina la posición relativa dentro del compás
+con la longitud del compás anterior para reconstruir tiempos absolutos y barras de compás, recuperando ligaduras y silencios durante la
+conversión posterior a MusicXML~\cite{beyer2024midi2score}.
+
+En el núcleo de la herramienta se utiliza un modelo tipo RoFormer, es decir, un \textit{transformer} con codificaciones posicionales rotatorias
+(\emph{Rotary Positional Embeddings}), dispuesto en una arquitectura estándar \emph{encoder--decoder} autoregresiva. Los distintos flujos
+de tokens de cada nota se embeben por separado y se suman en un espacio común de dimensión fija antes de alimentar las pilas de atención.
+La arquitectura integra técnicas como normalización de capa previa a la atención (\emph{pre-norm}) y funciones de activación de
+tipo SwiGLU en las capas de alimentación directa, lo que mejora la estabilidad del entrenamiento y la capacidad del modelo para capturar
+dependencias de largo alcance, cruciales para estimar el compás y mantener la coherencia de notación a lo largo de la pieza. El entrenamiento
+se plantea como una tarea de clasificación múltiple en cada paso temporal, con una función de pérdida basada en entropía cruzada sobre todos
+los atributos de salida y sobre un token especial de espaciado que permite alinear los flujos paralelos; para la generación se emplea
+decodificación autoregresiva \emph{greedy}\cite{beyer2024midi2score}.
+
+El flujo de trabajo de inferencia puede resumirse en las siguientes etapas:
+\begin{enumerate}
+    \item Tokenización del archivo \emph{performance MIDI} procedente bien de una interpretación real, bien de un sistema de transcripción,
+    extrayendo los flujos de tokens de entrada descritos.
+    \item Traducción de dichos tokens a los flujos de salida de MusicXML mediante el Transformer \emph{encoder--decoder}.
+    \item Reconstrucción de la partitura en formato MusicXML, donde se derivan tiempos absolutos, compases y ligaduras, se insertan
+    silencios en los huecos entre notas y se generan los elementos de notación final.
+\end{enumerate}
+El resultado es una partitura legible en cualquier editor estándar y adecuada para el análisis cualitativo y
+cuantitativo de las transcripciones generadas en este trabajo.
+
+Respecto a la implementación, el código original de \textit{midi2scoreTransformer}~\cite{beyer2024midi2score} se apoyaba en clases internas de versiones
+anteriores de la biblioteca \texttt{transformers} de HuggingFace, lo que generaba incompatibilidades con versiones recientes. Para utilizar
+la herramienta en el entorno actual, se ha refactorizado el módulo RoFormer del proyecto sustituyendo la herencia de dichas clases internas
+por una jerarquía de módulos puros de PyTorch que replica la lógica del modelo original. Esta reestructuración mantiene intactos los nombres
+de las capas y la definición matemática, de modo que el \emph{checkpoint} preentrenado se puede cargar sin modificaciones y el sistema
+funciona con las versiones actuales de las bibliotecas, garantizando su estabilidad futura y reutilización como componente de postprocesado en este TFG.
+
+
+
+
 
 %==============================================================================
 
@@ -1323,8 +1379,8 @@ que servirá de referencia para las explicaciones sobre este modelo.
   \textit{embedding} de posición espacial. Los \foreign{english}{event tracks}
   $(T' \times N_{\text{events}} \times 256)$, inicializados también con
   \textit{embedding} de posición (independiente), se concatenan a las representaciones del
-  espectrograma y se procesan conjuntamente por el transformer encoder ($\times
-  L{=}6$ capas). Tras el encoder, únicamente los \foreign{english}{event tracks}
+  espectrograma y se procesan conjuntamente por el \textit{transformer} \textit{encoder} ($\times
+  L{=}6$ capas). Tras el \textit{encoder}, únicamente los \foreign{english}{event tracks}
   se retienen y se remuestrean temporalmente mediante \texttt{ConvTranspose1d}
   hasta la resolución original $T$. Los \textit{embeddings} $\mathbf{h}_i \in
   \mathbb{R}^{128}$ resultantes se usan en dos ramas paralelas: el módulo de
@@ -1390,10 +1446,10 @@ original~\cite{yan2021semicrf1}, hFT-Transformer~\cite{toyama2023hftt} y
 Onsets\,\&\,Frames~\cite{hawthorne2018onsetsframes}), que preservan la
 resolución temporal completa de la entrada a lo largo de toda la red, Transkun
 adopta un diseño de \textbf{mapa de características de baja resolución}, análogo
-al empleado en los Vision Transformers (ViT)~\cite{dosovitskiy2021vit}. Esta
+al empleado en los \textit{Vision Transformers} (ViT)~\cite{dosovitskiy2021vit}. Esta
 elección de diseño se justifica en que la alta dimensionalidad de los embeddings
 permite mantener suficiente capacidad expresiva incluso con resolución temporal
-reducida, al tiempo que el coste computacional del transformer se reduce de forma
+reducida, al tiempo que el coste computacional del \textit{transformer} se reduce de forma
 drástica~\cite{yan2024transkun,li2022videt}.
 
 El espectrograma de entrada $(T \times F \times 5)$ se submuestrea mediante
@@ -1437,7 +1493,7 @@ $g : \mathbb{R}^B \to \mathbb{R}^E$ es un perceptrón de dos capas con tamaño
 oculto 1024~\cite{yan2024transkun}. Este \textit{embedding} funciona como una red MLP que
 toma coordenadas espaciales como entrada, con la primera no linealidad siendo una
 función coseno escalada. Se elige por su sencillez y amplia compatibilidad con
-arquitecturas transformer.
+arquitecturas \textit{transformer}.
 
 El embedding se aplica de forma \textbf{independiente} a las representaciones del
 espectrograma submuestreado (con coordenadas $(\textit{frameIdx},\,
@@ -1455,7 +1511,7 @@ $N_{\text{events}} = 91$ (88 notas más 3 pedales), que actúa como representaci
 aprendible de cada tipo de evento a lo largo del tiempo en la resolución reducida.
 Esta idea es análoga a la de los tokens de detección (\foreign{english}{detection
 tokens}) del modelo YOLOS~\cite{fang2021yolos}, donde tokens aprendibles se
-añaden a las representaciones de imagen para que el transformer los especialice
+añaden a las representaciones de imagen para que el \textit{transformer} los especialice
 en tareas de predicción densa.
 
 Los \foreign{english}{event tracks} se inicializan sumándoles sus propios
@@ -1465,7 +1521,7 @@ espectrograma submuestreado enriquecido a lo largo de la dimensión de
 secuencia~\cite{yan2024transkun}. El tensor resultante, de dimensiones
 $T' \times (F' + N_{\text{events}}) \times 256$, constituye la entrada al
 transformer encoder. Esta concatenación, indicada como \texttt{[concat]} en la
-Figura~\ref{fig:transkun_overview}, permite que el transformer intercambie
+Figura~\ref{fig:transkun_overview}, permite que el \textit{transformer} intercambie
 información entre las representaciones tiempo-frecuencia del audio y los
 \foreign{english}{event tracks} a través del mecanismo de auto-atención, de
 forma completamente aprendible.
@@ -1508,8 +1564,8 @@ Figura~\ref{fig:transkun_encoder}.
     \caption{Capa del encoder}
     \label{fig:transkun_encoder_b}
   \end{subfigure}
-  \caption[Bloques constitutivos del transformer encoder de Transkun]%
-  {Bloques constitutivos del transformer encoder. \textbf{(a)} Bloque transformer
+  \caption[Bloques constitutivos del \textit{transformer} \textit{encoder} de Transkun]%
+  {Bloques constitutivos del \textit{transformer} \textit{encoder}. \textbf{(a)} Bloque \textit{transformer}
   básico (\texttt{TransformerBlock}): aplica RMSNorm antes de la auto-atención y
   de la FFN, y escala la salida de cada subcapa mediante el factor aprendible
   $\lambda$ (ReZero) antes de sumarlo al residual. \textbf{(b)} Organización de
@@ -1521,7 +1577,7 @@ Figura~\ref{fig:transkun_encoder}.
 \end{figure}
 
 
-Cada bloque transformer, ilustrado en la
+Cada bloque \textit{transformer}, ilustrado en la
 Figura~\ref{fig:transkun_encoder}, sigue el diseño estándar de
 \foreign{english}{pre-normalización}: la entrada $\boldsymbol{h}$ se normaliza
 primero con \textbf{RMSNorm}~\cite{zhang2019rmsnorm}, después se aplica la capa
@@ -1762,7 +1818,7 @@ diseño de baja resolución temporal no implica ninguna pérdida de expresividad
 
 
 La relación entre la Ecuación~\ref{eq:scoring_ip} y el mecanismo de atención por
-producto interior escalado de los transformers~\cite{vaswani2017attention} es
+producto interior escalado de los \textit{transformers}~\cite{vaswani2017attention} es
 clara: ambos computan una puntuación escalar para cada par de posiciones
 $(i, j)$ mediante el producto interior entre un vector de consulta
 $\boldsymbol{q}_i$ y un vector de clave $\boldsymbol{k}_j$, escalado por
@@ -1774,13 +1830,13 @@ posibles conjuntos de intervalos no solapados $\mathcal{Y}'$, garantizando que l
 decodificación sea globalmente óptima en lugar de localmente
 \textit{greedy}~\cite{yan2024transkun}.
 
-Esta analogía no es solamente formal: motiva la elección del transformer como
+Esta analogía no es solamente formal: motiva la elección del \textit{transformer} como
 \foreign{english}{backbone}, ya que puede interpretarse como una arquitectura que
 refina iterativamente las representaciones para que sean adecuadas para el
 \foreign{english}{scoring} por producto interior. El estudio de ablación del
 artículo original confirma que una capa lineal para el cálculo de
 $\boldsymbol{q}$, $\boldsymbol{k}$ y $b$ (Ecuación~\ref{eq:kqb}) supera a un
-MLP, alineándose con cómo se calculan las consultas y claves en los transformers
+MLP, alineándose con cómo se calculan las consultas y claves en los \textit{transformers}
 estándar~\cite{yan2024transkun}.
 
 %==============================================================================
@@ -1853,7 +1909,7 @@ objetivo total es~\cite{yan2024transkun}:
 
 \subsection*{Procesado por segmentos y gestión de eventos incompletos}
 
-El transformer encoder opera sobre segmentos de audio de duración fija de
+El \textit{transformer} encoder opera sobre segmentos de audio de duración fija de
 \textbf{16 segundos}. Para transcribir grabaciones de mayor duración, el audio se
 divide en segmentos consecutivos con un \textbf{solapamiento del 50\,\%} (8
 segundos de solape), y los eventos decodificados en cada segmento se ensamblan
@@ -2115,7 +2171,7 @@ entrenamiento por limitaciones de cómputo y tiempo: aunque las métricas de
 validación a nivel de nota mostraban una mejora prácticamente negligible en las 
 últimas épocas, otras métricas intermedias, como el MSE del \textit{offset}, 
 presentaban todavía una tendencia decreciente apreciable en las curvas de 
-entrenamiento, lo que indica que el modelo no había alcanzado su convergencia 
+entrenamiento, lo que indica que el modelo podría no haber alcanzado su convergencia 
 completa.
 
 En comparación con el modelo MFT-FiLM entrenado en el capítulo anterior, la 
@@ -2251,7 +2307,7 @@ entrenamiento realizado.
 
 En comparación con el modelo MFT-FiLM reproducido en el capítulo anterior, 
 Transkun obtiene resultados superiores en la mayoría de las métricas, 
-siendo la única excepción el $F_1$ de \textit{Note On.}, donde la diferencia es 
+siendo la única excepción las  métricas de \textit{Note On.}, donde la diferencia es 
 marginal. Atendiendo a la métrica más representativa de la calidad de una 
 transcripción completa ()\textit{Note w/ Off. \& Vel.} $F_1$) Transkun 
 ($91{,}52\%$) supera a MFT-FiLM ($90{,}78\%$), si bien esta ventaja se 
@@ -2268,7 +2324,7 @@ modelos, evaluados sobre repertorio de música clásica occidental,
 representan fielmente el estado del arte en transcripción automática de piano.
 
 
-\chapter{Comparación fuera del dominio: \textit{jazz}}
+\chapter{Evaluación fuera del clasicismo: \textit{jazz}}
 \label{chap:comparacion_jazz}
 
 \section{Introducción}
@@ -2287,7 +2343,7 @@ clásico, centrada en el piano \textit{jazz}. El objetivo no es sustituir la eva
 sobre MAESTRO, sino complementarla con un análisis que permita observar qué modelo
 se adapta mejor a las particularidades del \textit{jazz} una vez entrenado. Por tanto, PiJAMA no
 se emplea como conjunto de entrenamiento ni como base para realizar \textit{fine-tuning},
-sino exclusivamente como banco de prueba para estudiar la generalización relativa de
+sino exclusivamente como medio para estudiar la generalización relativa de
 MFT-FiLM y Transkun.
 
 La Sección~\ref{sec:maestro_generalizacion_jazz} parte de los resultados obtenidos
@@ -2297,12 +2353,12 @@ relación entre el rendimiento de los modelos y factores musicales como la densi
 notas, la polifonía y el estilo compositivo. La Sección~\ref{sec:pijama_dataset_jazz}
 presenta PiJAMA como conjunto de datos de piano \textit{jazz} solo, describiendo su utilidad
 para este trabajo y las diferencias acústicas que introduce respecto al repertorio clásico
-o romántico. Posteriormente, la Sección~\ref{sec:experimentos_pijama} detallará el
-protocolo experimental seguido para evaluar ambos modelos sobre este conjunto, y la
-Sección~\ref{sec:conclusiones_pijama} resumirá los resultados y conclusiones obtenidos.
+o romántico. Posteriormente, la Sección~\ref{sec:experimentos_pijama} detalla el
+protocolo experimental seguido para evaluar ambos modelos sobre este conjunto y los resultados que reportan. Finalmente,  la
+Sección~\ref{sec:conclusiones_pijama} resume las conclusiones obtenidas.
 
 
-\section{MAESTRO y el problema de la generalización}
+\section{Análisis del comportamiento sobre MAESTRO}
 \label{sec:maestro_generalizacion_jazz}
 
 MAESTRO se ha consolidado como uno de los conjuntos de datos fundamentales para
@@ -2311,10 +2367,10 @@ interpretaciones reales de piano acústico con una referencia MIDI de alta preci
 obtenida mediante pianos Yamaha Disklavier~\cite{hawthorne2019maestro,
 magenta2020maestrov3}. Esto permite entrenar y evaluar modelos de transcripción
 sobre una colección extensa, homogénea y cuidadosamente alineada, convirtiéndolo en
-un punto de referencia natural para comparar sistemas de AMT.
+un punto de referencia natural para entrenar sistemas de AMT.
 
-No obstante, el hecho de que MAESTRO sea un banco de pruebas sólido no implica que
-agote todos los escenarios posibles de transcripción de piano. La distribución musical
+No obstante, el hecho de que MAESTRO sea de gran calidad no implica que abarque 
+todos los escenarios posibles de transcripción de piano. La distribución musical
 del conjunto está fuertemente vinculada al repertorio clásico occidental, especialmente
 al contexto de interpretaciones de competición pianística (como se comentó en la Sección~\ref{sec:maestro_limitaciones}).
 Por esto, un modelo que
@@ -2322,29 +2378,17 @@ obtiene buenos resultados sobre MAESTRO puede haber aprendido patrones altamente
 eficaces para ese dominio concreto, pero no necesariamente equivalentes a una
 comprensión general de toda la música para piano.
 
-Esta distinción es importante en este trabajo. La evaluación sobre MAESTRO
-permite comprobar si las implementaciones reproducidas de MFT-FiLM y Transkun
-alcanzan un comportamiento competitivo bajo el protocolo habitual. Sin embargo, para
-analizar la robustez de ambos modelos resulta necesario introducir un cambio de
-dominio. En otras palabras, interesa estudiar qué ocurre cuando los sistemas se enfrentan
-a un repertorio que conserva el mismo instrumento, pero modifica de forma sustancial
-la organización rítmica, armónica, tímbrica y expresiva de la señal.
-
-El análisis estadístico realizado sobre los resultados de ambos modelos en MAESTRO ($F_1$ \textit{note onset} en función de notas por segundo, polifonía máxima y compositor)
-apunta precisamente en esta dirección. En dicho estudio, el factor correspondiente al
-modelo no resultó estadísticamente significativo, lo que indica que, dentro del conjunto
-analizado, no se observaron diferencias robustas entre MFT-FiLM y Transkun en términos
-de $F_1$ de \textit{note onset}. Por el contrario, sí resultaron significativos factores
-relacionados con las características musicales de las piezas, como la densidad de notas
-por segundo, la polifonía máxima y la época histórica del compositor. Este resultado
-sugiere que, en el estado actual de estos modelos, una parte importante de la dificultad
-no depende únicamente de la arquitectura empleada, sino de la naturaleza acústica y
-musical de la obra transcrita.
+Para comprender en profundidad el comportamiento de ambos modelos sobre este corpus, se ha llevado a cabo un análisis estadístico
+de sus resultados. Concretamente, se ha evaluado la métrica $F_1$ \textit{note onset} sobre la partición de prueba (\textit{test split}) en
+función de diversas variables musicales: notas por segundo, polifonía máxima, duración de la pieza y compositor. Los resultados de este
+análisis indican que factores como la densidad de notas, la polifonía y el autor afectan de manera significativa al rendimiento. Esto sugiere
+que, en el estado actual de los sistemas de AMT, una parte sustancial de la dificultad de transcripción no depende exclusivamente de la
+arquitectura empleada, sino de la propia naturaleza acústica y musical de la obra.
 
 La densidad de notas por segundo constituye una medida directa de la actividad temporal
 de la pieza. Cuando el número de eventos por unidad de tiempo aumenta, se reduce el
 espacio disponible para distinguir ataques consecutivos y se incrementa la probabilidad
-de solapamiento entre notas. De forma complementaria, la polifonía máxima aproxima
+de solapamiento entre notas. De forma complementaria, la polifonía máxima aumenta
 la complejidad vertical de la textura pianística. Una mayor cantidad de notas simultáneas
 provoca una superposición más intensa de componentes espectrales, armónicos y colas
 de resonancia, dificultando la asignación precisa de la energía acústica a eventos MIDI
@@ -2367,9 +2411,9 @@ manifestación de la evolución de la escritura pianística. A medida que avanza
 repertorio, aparecen texturas más densas, mayor uso expresivo del pedal, acordes de
 gran amplitud, figuraciones rápidas, pasajes de carácter orquestal, trémolos y una
 mayor saturación del espacio sonoro. Todos estos elementos afectan directamente a la
-representación tiempo--frecuencia utilizada por los modelos. Uno de los resultados más interesantes del estudio 
-es la representación de medias e intervalos LSD al 95\% sobre el conjunto de test de MAESTRO, que podemos ver
-en la Figura~\ref{fig:lsd_compositores_cronologico}
+representación tiempo--frecuencia utilizada por los modelos, sin estar necesariamente relacionados con la dificultad de la pieza. Uno de los resultados más interesantes del estudio 
+es la representación de medias e intervalos LSD (\textit{Least Significant Difference}) al 95\% del $F_1$ respecto al factor compositor (ordenado cronológicamente, con excepciones por época estilística), que podemos ver
+en la Figura~\ref{fig:lsd_compositores_cronologico}.
 
 \begin{figure}[H]
   \centering
@@ -2404,20 +2448,20 @@ grabaciones del \textit{dataset}, presentados en la Sección~\ref{sec:maestro_ca
 \end{figure}
 
 En la Figura~\ref{fig:lsd_5compositores_cronologico} se observa con mayor claridad la tendencia decreciente del $F_1$ \textit{note onset}
-para distintos compositores representando etapas sucesivas de la música clásica occidental.
+para los compositores más representados en el \textit{dataset} MAESTRO, mostrando etapas sucesivas de la música clásica occidental.
 
 Esta observación resulta relevante porque indica que la dificultad de transcripción está
-relacionada con el lenguaje pianístico. Si dentro del propio MAESTRO se detectan
-diferencias asociadas al estilo, la época, la densidad y la polifonía, entonces es razonable
-plantear que un cambio más acusado de dominio pueda modificar también el
+relacionada con el lenguaje pianístico. Si dentro del propio \textit{dataset} MAESTRO se detectan
+diferencias asociadas a la época de composición,  entonces es razonable
+plantear que un cambio más acusado pueda modificar también el
 comportamiento relativo de los modelos. En este sentido, el \textit{jazz} constituye un caso
-especialmente interesante: sigue tratándose de piano, pero la distribución musical y
-acústica de las interpretaciones difiere de forma notable del repertorio clásico utilizado
+especialmente interesante: sigue tratándose de piano, pero la distribución musical, 
+la acústica y el periodo difieren de forma notable del repertorio clásico utilizado
 habitualmente para entrenar y evaluar estos sistemas.
 
 Además del efecto de los factores principales, el análisis sobre el \textit{split} de \textit{test} de MAESTRO mostró una
 interacción significativa entre duración y densidad de notas por segundo. En particular,
-las piezas largas con baja densidad presentaban un comportamiento anómalo (decremento del $F_1$). Este
+las piezas largas con baja densidad presentaban un comportamiento anómalo (un descenso del $F_1$). Este
 fenómeno puede explicarse por el procesamiento fragmentado del audio que realizan ambos modelos estudiados. En
 piezas con baja densidad, las notas pueden presentar colas de resonancia largas,
 especialmente cuando interviene el pedal. Una ventana puede contener entonces energía
@@ -2437,14 +2481,15 @@ generalización. El objetivo no es afirmar que el \textit{jazz} sea necesariamen
 el repertorio clásico en todos los casos, sino observar si las características propias de
 este estilo modifican la relación entre MFT-FiLM y Transkun. La comparación deja de
 centrarse únicamente en el rendimiento absoluto y pasa a estudiar qué modelo conserva
-mejor su capacidad de transcripción ante una distribución musical distinta.
+mejor su capacidad de transcripción ante una distribución musical distinta, además de comprobar si los resultados obtenidos se sitúan
+de acuerdo con la tendencia decreciente observada en la Figura~\ref{fig:lsd_compositores_cronologico}.
 
 
-\section{PiJAMA como conjunto de evaluación en piano \textit{jazz}}
+\section{PiJAMA}
 \label{sec:pijama_dataset_jazz}
 
 Para estudiar el comportamiento de los modelos fuera del dominio clásico se ha utilizado
-PiJAMA, acrónimo de \textit{Piano Jazz with Automatic MIDI Annotations}. Se trata de
+PiJAMA (\textit{Piano Jazz with Automatic MIDI Annotations}). Se trata de
 un \textit{dataset} de piano solo compuesto por interpretaciones reales de
 pianistas de \textit{jazz}, acompañado de anotaciones MIDI generadas automáticamente~\cite{edwards2023pijama}. Su interés para este trabajo reside en que proporciona una
 colección amplia y estilísticamente coherente de grabaciones de piano \textit{jazz}, un género
@@ -2456,7 +2501,7 @@ no se construye a partir de interpretaciones registradas en un entorno controlad
 a partir de grabaciones discográficas reales~\cite{edwards2023pijama}. Esto introduce una variabilidad acústica
 mayor: diferencias de microfonía, sala, mezcla, reverberación, ruido, aplausos o
 fragmentos hablados en algunas interpretaciones en directo. Desde el punto de vista de
-la transcripción automática, esta variabilidad hace que PiJAMA sea un banco de prueba
+la transcripción automática, esta variabilidad hace que PiJAMA sea un \textit{dataset}
 especialmente útil para analizar robustez.
 
 El conjunto fue construido a partir de una selección de pianistas representativos de la
@@ -2470,7 +2515,7 @@ comienzan ni terminan necesariamente con música: pueden contener aplausos,
 presentaciones o silencios prolongados.
 
 Las anotaciones simbólicas de PiJAMA se proporcionan en formato MIDI y fueron
-obtenidas mediante dos sistemas de transcripción automática de piano. Esta característica
+obtenidas mediante sistemas de transcripción automática de piano. Esta característica
 debe tenerse en cuenta al interpretar los resultados: PiJAMA no ofrece una referencia
 capturada mediante Disklavier ni una transcripción manual nota a nota, sino
 pseudo-etiquetas automáticas. En este trabajo, por tanto, las métricas obtenidas sobre
@@ -2487,7 +2532,7 @@ parámetros, de modo que la evaluación refleja su capacidad de generalización 
 finalizado el entrenamiento principal.
 
 La elección de PiJAMA se justifica también por la dificultad de encontrar un equivalente
-jazzístico de MAESTRO que resulte adecuado para la evaluación de transcripción
+jazzístico o moderno de MAESTRO que resulte adecuado para la evaluación de transcripción
 polifónica de piano. Durante la preparación del experimento se consideraron otros
 conjuntos de datos relacionados con \textit{jazz} o con transcripción de piano, pero ninguno
 reunía simultáneamente las condiciones necesarias para este trabajo: piano solo,
@@ -2506,8 +2551,7 @@ También se consideró la \textit{RWC Jazz Music Database}, que forma parte de l
 \textit{RWC Music Database}~\cite{goto2002rwc}. Esta base de datos es relevante por incluir
 material de \textit{jazz} y haber sido diseñada como recurso común para investigación en
 procesamiento musical. No obstante, su utilidad para este experimento es limitada:
-el número de interpretaciones de piano \textit{jazz} solo disponibles es muy reducido y no
-proporciona un banco de prueba suficientemente amplio para comparar de forma
+el número de interpretaciones de piano \textit{jazz} solo disponibles es muy reducido, insuficiente para comparar de forma
 estable dos modelos de transcripción. En consecuencia, puede resultar útil como recurso
 complementario o histórico, pero no como corpus principal de evaluación.
 
@@ -2523,7 +2567,7 @@ piano solo, utilizar un conjunto con acompañamiento de bajo y batería habría 
 el problema de generalización estilística con el problema de separación instrumental.
 
 En este contexto, PiJAMA representa el compromiso más adecuado para el objetivo del
-experimento. A diferencia de los conjuntos anteriores, proporciona una colección extensa
+experimento. Proporciona una colección extensa
 de piano \textit{jazz} solo, con más de 200 horas de grabaciones reales y una representación
 MIDI que permite calcular métricas de transcripción nota a nota~\cite{edwards2023pijama}.
 
@@ -2531,21 +2575,25 @@ MIDI que permite calcular métricas de transcripción nota a nota~\cite{edwards2
 Desde el punto de vista musical, el piano \textit{jazz} introduce una serie de rasgos que lo
 convierten en un dominio especialmente interesante. La escritura y la interpretación
 jazzística hacen un uso frecuente de síncopas, desplazamientos rítmicos, acordes
-extendidos, tensiones armónicas, \textit{voicings} abiertos, ornamentación, improvisación y
+extendidos, tensiones armónicas, \textit{voicings}\footnote{En el contexto del \textit{jazz} y
+la armonía moderna, el término \textit{voicing} hace referencia a la disposición vertical específica,
+distribución y espaciado de las notas que componen un acorde.}
+abiertos, ornamentación, improvisación y
 variaciones expresivas del pulso. Además, el silencio desempeña un papel estructural
 más marcado que en buena parte del repertorio clásico o romántico: no aparece
 simplemente como ausencia de sonido, sino como elemento rítmico y discursivo.
 
 Estas propiedades afectan directamente a la señal de audio. En una interpretación
 clásica o romántica, incluso cuando la textura es compleja, suele existir una organización
-formal más continua: las voces se distribuyen de manera relativamente estable, el flujo
-sonoro mantiene una progresión clara y los silencios extensos son menos frecuentes.
+formal más continua: voces con distribución estable, flujo
+sonoro con progresión clara y silencios extensos poco frecuentes.
 En muchas interpretaciones de \textit{jazz}, por el contrario, pueden alternarse pasajes de alta
 densidad en registros medios con espacios de silencio, ataques aislados, acordes breves,
 resonancias prolongadas o respuestas rítmicas irregulares. Esta alternancia modifica
 la distribución temporal de los eventos y, por tanto, la información que reciben los
 modelos en cada ventana de análisis. La Figura~\ref{fig:spec_clasico_jazz} presenta de forma gráfica estas propiedades
 diferenciales que se han comentado.
+
 
 \begin{figure}[p]
   \centering
@@ -2584,6 +2632,8 @@ diferenciales que se han comentado.
   \label{fig:spec_clasico_jazz}
 \end{figure}
 
+\clearpage
+
 En la Figura~\ref{fig:spec_clasico_jazz} se observa que el 
 espectrograma correspondiente a la pieza clásica/romántica presenta una estructura
 más continua, con líneas de energía relativamente organizadas y una separación más
@@ -2597,7 +2647,7 @@ se sitúan muchos \textit{voicings} y acompañamientos armónicos, junto con ata
 aislados, silencios expresivos y cambios bruscos de densidad. Esta combinación puede
 generar regiones en las que el sonido parece estar más mezclado, no necesariamente
 por una mayor polifonía global, sino por la superposición de acordes, resonancias,
-pedal, síncopas y variaciones de articulación. Para un modelo entrenado principalmente
+pedal y variaciones de articulación. Para un modelo entrenado principalmente
 sobre repertorio clásico, estas configuraciones pueden representar un cambio relevante
 en la distribución de entrada.
 
@@ -2607,7 +2657,7 @@ Sin embargo, desde el punto de vista de la transcripción, esos silencios no sim
 necesariamente el problema. Si la interpretación alterna silencios con ataques densos o
 con acordes de gran riqueza armónica, el modelo debe resolver transiciones abruptas y
 distinguir con precisión entre el final de una resonancia, la ausencia real de eventos y
-la aparición de un nuevo ataque. Este comportamiento conecta con la anomalía observada
+la aparición de un nuevo ataque. Este comportamiento se relaciona directamente con la anomalía observada
 en MAESTRO para piezas largas con baja densidad de notas (Sección~\ref{sec:maestro_generalizacion_jazz}): una baja actividad media
 no siempre implica menor dificultad.
 
@@ -2620,34 +2670,372 @@ presentan un rendimiento similar en el dominio estándar. Si uno de ellos obtien
 mayor concordancia sobre PiJAMA, esto puede interpretarse como una señal de mejor
 adaptación relativa a un dominio externo al entrenamiento.
 
-Antes de realizar la evaluación fue necesario llevar a cabo una fase de limpieza del
-conjunto. Esta depuración incluyó la revisión de pistas no disponibles, problemas de
-duración, inconsistencias entre archivos, fragmentos no musicales y casos en los que el
-contenido no resultaba adecuado para una comparación directa. Dado que PiJAMA se
-basa en grabaciones reales procedentes de fuentes externas, esta etapa es esencial para
-evitar que las métricas reflejen errores de preparación del conjunto en lugar del
-comportamiento de los modelos.
-
-La limpieza del conjunto constituye, por tanto, parte del protocolo experimental. Al
-trabajar con repertorio real fuera del dominio clásico, no basta con ejecutar los modelos
-sobre todas las pistas disponibles; es necesario construir un subconjunto evaluable,
-coherente y comparable. Solo de este modo los resultados obtenidos pueden interpretarse
-como una medida razonable de adaptación al \textit{jazz} y no como una consecuencia de
-problemas ajenos a la transcripción.
-
-En resumen, PiJAMA se utiliza en este trabajo como un banco de prueba de piano \textit{jazz}
-solo para estudiar la generalización de MFT-FiLM y Transkun. Su función no es reemplazar
-a MAESTRO, sino aportar un dominio complementario que permite analizar si los
-modelos mantienen su comportamiento cuando se enfrentan a una música con mayor
-variabilidad rítmica, armónica y acústica. Bajo esta formulación, los resultados sobre
-PiJAMA son útiles para responder la pregunta central de este capítulo: cuál de los dos
-modelos se adapta mejor a las características sonoras del \textit{jazz}.
-
 \section{Experimentos}
 \label{sec:experimentos_pijama}
 
+En primer lugar, se descargaron las grabaciones de audio asociadas a las anotaciones
+MIDI de PiJAMA. De las $2\,777$ piezas con referencia simbólica, se obtuvieron
+correctamente $2\,626$ archivos de audio, por lo que $151$ interpretaciones tuvieron que
+descartarse al no disponer de la señal necesaria para realizar la inferencia. Antes de
+evaluar los modelos, se comprobó que esta pérdida no alteraba de forma significativa
+la distribución original de las particiones del conjunto. La Tabla~\ref{tab:pijama_cobertura_splits}
+muestra la cobertura obtenida tras la descarga.
+
+\begin{table}[H]
+  \centering
+  \caption[Cobertura de audio en las particiones de PiJAMA]{%
+  Cobertura de audio en las particiones de PiJAMA tras la descarga de las grabaciones.
+  Se muestra el número de piezas con audio disponible, el número de piezas descartadas
+  por ausencia de audio y el porcentaje final disponible en cada partición.}
+  \label{tab:pijama_cobertura_splits}
+  
+  \begin{tabular}{lccc}
+    \hline
+    \textbf{Partición} &
+    \textbf{Con audio} &
+    \textbf{Sin audio} &
+    \textbf{Disponible} \\
+    \hline
+    \textit{train}      & $2\,099$ & $128$ & $94.3\%$ \\
+    \textit{validation} & $261$    & $11$  & $95.9\%$ \\
+    \textit{test}       & $266$    & $12$  & $95.7\%$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Como puede observarse en la Tabla~\ref{tab:pijama_cobertura_splits}, la proporción de piezas disponibles se mantiene muy próxima
+en las tres particiones, siempre por encima del $94\%$. Por tanto, la pérdida de audios
+no introduce un sesgo relevante en la estructura del conjunto. En consecuencia, se
+respetaron las particiones originales de PiJAMA y se utilizó el subconjunto de
+\textit{test} disponible, formado por $266$ pares audio--MIDI.
+
+Una vez construido el conjunto evaluable, ambos modelos se evaluaron siguiendo el
+mismo protocolo descrito en la Sección~\ref{sec:metricas} para MAESTRO. Se emplearon las métricas
+estándar, manteniendo la misma tolerancia temporal de $0.05$ segundos para la comparación de \textit{onsets}.
+
+
+Una primera ejecución del experimento produjo resultados anómalos. En
+particular, MFT-FiLM obtenía un $F_1$ de \textit{frame} razonable, pero valores prácticamente
+nulos en las métricas basadas en \textit{onset}. El caso más claro fue un $F_1$ de \textit{frame}
+de $0.6797$ frente a un $F_1$ de \textit{note onset} de solo $0.0120$. Esta combinación no era
+coherente desde el punto de vista musical: si el modelo detectaba de forma aceptable
+qué notas estaban activas, no resultaba plausible que fallara casi por completo en la
+localización de sus pulsaciones.
+
+Para investigar esta anomalía se compararon manualmente predicciones y referencias
+en piezas individuales. El análisis mostró que las notas estimadas eran compatibles con
+las anotaciones MIDI, pero aparecían desplazadas temporalmente. Es decir, el problema
+no parecía deberse a un fallo de transcripción del modelo, sino a una desincronización
+sistemática entre el audio y la referencia simbólica. Esta hipótesis se confirmó al variar
+la tolerancia temporal de \textit{onset} en una pieza concreta: con la tolerancia estándar de
+$0.05$ segundos el resultado era casi nulo, mientras que al aumentar la tolerancia el
+$F_1$ crecía de forma abrupta, como se muestra en la Tabla~\ref{tab:pijama_tolerancia_onset}.
+
+\begin{table}[H]
+  \centering
+  \caption[Efecto de la tolerancia temporal en PiJAMA]{%
+  Efecto de la tolerancia temporal sobre el $F_1$ de \textit{note onset} en una
+  pieza de PiJAMA antes de corregir el alineamiento entre audio y MIDI.}
+  \label{tab:pijama_tolerancia_onset}
+  
+  \begin{tabular}{cc}
+    \hline
+    \textbf{Tolerancia de \textit{onset}} &
+    \textbf{$F_1$ de \textit{note onset}} \\
+    \hline
+    $0.05$ s & $0.0048$ \\
+    $0.10$ s & $0.5958$ \\
+    $0.20$ s & $0.9488$ \\
+    $0.50$ s & $0.9488$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Este comportamiento evidenciaba que las predicciones y la referencia coincidían
+musicalmente, pero no dentro de la ventana temporal estricta usada por la métrica. No
+obstante, aumentar la tolerancia no habría sido una solución adecuada, ya que habría
+modificado el protocolo respecto a MAESTRO. Por ello, se decidió mantener la tolerancia
+de $0.05$ segundos y corregir previamente el alineamiento temporal entre audio y MIDI.
+
+El desfase se estimó sobre el conjunto de \textit{test} y resultó ser muy estable: el offset medio
+fue de aproximadamente $0.0982$ segundos, con una mediana de $0.0983$ segundos y
+una desviación estándar de $0.0028$ segundos. Esta baja variabilidad permitió tratarlo
+como una desincronización sistemática del conjunto. Tras aplicar la corrección temporal,
+se reconstruyó la referencia alineada para las $266$ piezas de \textit{test} y se calcularon de
+nuevo las métricas manteniendo exactamente la misma tolerancia que en MAESTRO.
+
+La Tabla~\ref{tab:pijama_resultados_comparativos} presenta los resultados finales de
+MFT-FiLM y Transkun sobre PiJAMA, junto con los resultados obtenidos previamente
+sobre MAESTRO.
+
+\begin{table}[H]
+  \centering
+  \caption[Resultados comparativos de MFT-FiLM y Transkun en MAESTRO y PiJAMA]{%
+  Resultados comparativos de MFT-FiLM y Transkun sobre MAESTRO y PiJAMA.
+  Se muestran la precisión (\textit{P}), el \textit{recall} (\textit{R}) y el $F_1$
+  para las principales métricas de transcripción automática de piano. Todas las métricas
+  se expresan en porcentaje (\%).}
+  \label{tab:pijama_resultados_comparativos}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{c|ccc|ccc|ccc|ccc}
+    \hline
+    \multirow{2}{*}{\textbf{Modelo}} &
+    \multicolumn{3}{c|}{\textbf{Frame}} &
+    \multicolumn{3}{c|}{\textbf{Note}} &
+    \multicolumn{3}{c|}{\textbf{Note w/ Offset}} &
+    \multicolumn{3}{c}{\textbf{Note w/ Off. \& Vel.}} \\
+    \cline{2-13}
+    &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} \\
+    \hline
+
+    &
+    \multicolumn{12}{c}{\textbf{MAESTRO}} \\
+    \hline
+
+    Transkun &
+    94.25 & 95.21 & 94.69 &
+    99.68 & 96.48 & 98.03 &
+    93.58 & 90.62 & 92.06 &
+    93.03 & 90.10 & 91.52 \\
+
+    MFT-FiLM &
+    95.27 & 93.56 & 94.36 &
+    99.37 & 97.03 & 98.17 &
+    92.70 & 90.54 & 91.60 &
+    91.86 & 89.73 & 90.78 \\
+
+    \hline
+
+    &
+    \multicolumn{12}{c}{\textbf{PiJAMA}} \\
+    \hline
+
+    Transkun &
+    79.62 & 84.13 & 81.56 &
+    88.15 & 94.54 & 91.15 &
+    65.48 & 70.17 & 67.69 &
+    57.42 & 61.51 & 59.35 \\
+
+    MFT-FiLM &
+    82.67 & 83.29 & 82.44 &
+    89.84 & 94.01 & 91.73 &
+    65.44 & 68.54 & 66.89 &
+    57.68 & 60.37 & 58.94 \\
+
+    \hline
+  \end{tabular}}
+\end{table}
+
+En la Tabla~\ref{tab:pijama_resultados_comparativos} se puede observar una degradación clara al pasar de MAESTRO a PiJAMA. Aunque
+ambos conjuntos contienen piano solo, el cambio de dominio afecta de forma notable a
+la calidad de las transcripciones. En MAESTRO, Transkun y MFT-FiLM obtienen valores
+muy próximos y elevados en todas las métricas, lo que confirma que ambos modelos
+resuelven de forma competitiva la transcripción en el dominio clásico. En PiJAMA, en
+cambio, todos los indicadores disminuyen, reflejando que el repertorio \textit{jazz} introduce
+dificultades que no están igualmente representadas en el dominio clásico. Estos resultados son coherentes con la tendencia
+que se observaba en la Figura~\ref{fig:lsd_5compositores_cronologico}.
+
+La caída es especialmente relevante porque, en transcripción musical, diferencias de
+uno o varios puntos porcentuales no son necesariamente pequeñas desde el punto de
+vista perceptivo. Un MIDI puede conservar una parte importante de las notas y, aun así,
+resultar musicalmente pobre si omite ataques relevantes, desplaza duraciones, corta
+notas antes de tiempo o introduce eventos adicionales. De forma similar a como una
+palabra incorrecta puede alterar el sentido de una frase, una proporción aparentemente
+reducida de errores puede modificar de manera clara el fraseo, el ritmo y la coherencia
+musical de una transcripción.
+
+La métrica de \textit{note onset} es la que mejor resiste el cambio de dominio. Transkun pasa
+de un $F_1$ de $98.03\%$ en MAESTRO a $91.15\%$ en PiJAMA, mientras que MFT-FiLM
+pasa de $98.17\%$ a $91.73\%$. Aunque estos valores siguen siendo altos en términos
+absolutos, la pérdida de casi siete puntos porcentuales es muy perceptible al escuchar
+o visualizar los MIDIs generados. Los modelos continúan detectando muchos ataques
+correctamente, pero el número de omisiones y errores aumenta lo suficiente como para
+que la transcripción pierda parte de la claridad que presentaba en repertorio clásico.
+
+En la métrica de \textit{frame} la degradación también es importante. Transkun desciende
+de $94.69\%$ a $81.56\%$, y MFT-FiLM de $94.36\%$ a $82.44\%$. Esto indica que los
+modelos no son completamente incapaces de decidir si una nota está presente o no, pero
+sí tienen más dificultades para mantener una representación temporal estable de las
+notas activas. En términos musicales, esto se traduce en transcripciones menos limpias,
+con más notas omitidas, activaciones espurias o continuidades mal representadas.
+
+Las métricas que incorporan \textit{offset} y velocidad muestran el deterioro más severo.
+En \textit{Note w/ Offset}, ambos modelos caen desde valores cercanos al $92\%$ en MAESTRO
+hasta aproximadamente el $67\%$ en PiJAMA. En la métrica más restrictiva,
+\textit{Note w/ Off. \& Vel.}, Transkun obtiene $59.35\%$ y MFT-FiLM $58.94\%$. Estos
+resultados confirman que el principal problema en el dominio \textit{jazz} no es solo detectar
+qué notas existen, sino reconstruir correctamente su duración, su articulación y su
+intensidad. Desde el punto de vista auditivo, estos errores afectan de forma directa al
+ritmo percibido, al fraseo y a la naturalidad de la interpretación transcrita.
+
+
+Por tanto, los resultados cuantitativos permiten extraer dos conclusiones. En primer
+lugar, ambos modelos generalizan peor al piano \textit{jazz} que al repertorio clásico, y esta
+pérdida se aprecia de forma clara en los MIDIs generados. En segundo lugar, aunque
+las métricas no muestran una superioridad notable de un modelo sobre el otro,
+sí sugieren que las diferencias deben analizarse también cualitativamente.
+
+Con el objetivo de comprender mejor los resultados de las métricas, cuya interpretación resulta menos concluyente que en el caso de MAESTRO,
+se propone analizar un fragmento de una pieza de \textit{jazz} procesado por ambos modelos. De este modo, se busca obtener conclusiones más
+representativas sobre su funcionamiento y determinar si las ligeras variaciones en los resultados cuantitativos se traducen en diferencias
+perceptibles a nivel auditivo y visual que permitan discernir qué modelo ofrece un rendimiento superior.
+
+Tras procesar el fragmento de audio (correspondiente a una interpretación original de un arreglo de \textit{jazz} de \textit{Fly Me to the Moon}, de Bart Howard)
+mediante los modelos evaluados, se obtiene un archivo MIDI cuya representación en un visor de partituras se ilustra
+en la Figura~\ref{fig:midis_originales}.
+
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.95\linewidth}
+    \centering
+    \includegraphics[
+      width=\linewidth,
+      height=0.36\textheight,
+      keepaspectratio
+    ]{figuras/raw_mft.png}
+    \caption{Modelo MFT-FiLM}
+  \end{subfigure}
+
+  \vspace{1.2em}
+
+  \begin{subfigure}{0.95\linewidth}
+    \centering
+    \includegraphics[
+      width=\linewidth,
+      height=0.36\textheight,
+      keepaspectratio
+    ]{figuras/raw_transkun.png}
+    \caption{Modelo Transkun}
+  \end{subfigure}
+
+  \caption[Salidas de MFT-FiLM y Transkun sobre fragmento de \textit{jazz}]%
+  {Salidas de MFT-FiLM y Transkun sobre fragmento de \textit{jazz}. Se observa una representación MIDI del audio poco legible y difícil de interpretar, particularmente en el caso del modelo MFT-FiLM. Cabe recalcar que la salida de los modelos
+  no es una partitura, sino un MIDI que debería sonar como el audio de entrada.}
+  \label{fig:midis_originales}
+\end{figure}
+
+
+Como se puede observar en la Figura~\ref{fig:midis_originales}, la representación resulta bastante ilegible y de difícil interpretación,
+particularmente en el caso del modelo MFT-FiLM. Con el fin de obtener una visualización más comprensible, la salida de los modelos se
+procesa mediante la herramienta MIDI2ScoreTransformer, presentada y adaptada en la Sección~\ref{sec:midi2scoretransformer}. De este modo,
+se genera un archivo MIDI cuya transcripción se aproxima en mayor medida a una partitura real y legible, tal y como se muestra en
+la Figura~\ref{fig:midis2score_comparacion}.
+
+\begin{figure}[p]
+  \centering
+  \begin{subfigure}{0.95\linewidth}
+    \centering
+    \includegraphics[
+      width=\linewidth,
+      height=0.36\textheight,
+      keepaspectratio
+    ]{figuras/2score_mft.png}
+    \caption{Modelo MFT-FiLM}
+  \end{subfigure}
+
+  \vspace{1.2em}
+
+  \begin{subfigure}{0.95\linewidth}
+    \centering
+    \includegraphics[
+      width=\linewidth,
+      height=0.36\textheight,
+      keepaspectratio
+    ]{figuras/2score_transkun.png}
+    \caption{Modelo Transkun}
+  \end{subfigure}
+
+  \vspace{1.2em}
+
+  \begin{subfigure}{0.95\linewidth}
+    \centering
+    \includegraphics[
+      width=\linewidth,
+      height=0.36\textheight,
+      keepaspectratio
+    ]{figuras/ref_score.png}
+    \caption{Referencia MIDI}
+  \end{subfigure}
+
+  \caption[Salidas de MFT-FiLM y Transkun procesadas por MIDI2ScoreTransformer]%
+  {Salidas de MFT-FiLM y Transkun procesadas por MIDI2ScoreTransformer. En las transcripciones se observan notas azules, que representan
+  notas omitidas por los modelos pero que se encuentran en el MIDI original; y notas rojas que representan notas equivocadas, que no forman parte del MIDI original.
+  Observamos que se trata de una secuencia de acordes con gran disonancia, muy característica del \textit{jazz}. Respecto a la duración y velocidad de las notas, se puede ver que
+  ninguno de los modelos acierta de forma consistente, aunque Transkun se acerca más a la representación original. En cuanto a las notas, los primeros acordes se transcriben bastante bien
+  por ambos modelos: Transkun reproduce la referencia sin omisiones y MFT-FiLM omite unas pocas notas. A medida que avanza el fragmento, aumentan los errores y omisiones, ya que se van concentrando
+  los armónicos y colas de audio de las notas pulsadas previamente. Al final del fragmento observamos que ambos modelos fallan y omiten bastantes notas. Este fragmento sugiere que Transkun se
+  comporta mejor en situaciones características del \textit{jazz}.}
+  \label{fig:midis2score_comparacion}
+\end{figure}
+\clearpage
+
+El análisis detallado de las transcripciones ilustradas en la Figura~\ref{fig:midis2score_comparacion} revela diferencias significativas en
+el rendimiento de ambos modelos frente a la complejidad armónica y las disonancias características del \textit{jazz}. En primer lugar,
+respecto a la dimensión temporal, se observa que ninguno de los sistemas logra transcribir el ritmo con exactitud. Sin embargo,
+las duraciones predichas por el modelo Transkun se aproximan de manera considerablemente mayor a la interpretación original, superando a
+MFT-FiLM en este aspecto.
+
+En cuanto a la precisión tonal, la evolución del fragmento evidencia cómo la acumulación de armónicos y las colas de audio de las notas
+pulsadas previamente dificultan la tarea de transcripción a medida que avanza el tiempo. Aunque los dos modelos presentan dificultades en
+la sección final, los datos demuestran una clara diferencia entre ambos. Específicamente, ambos sistemas
+registran un total de 6 notas incorrectas (falsos positivos, notas de color rojo), las cuales se concentran de forma exclusiva en los tres últimos acordes de la secuencia. No obstante, la
+discrepancia principal reside en el volumen de notas omitidas, es decir, falsos negativos representados en color azul. El modelo MFT-FiLM omite un total de 17 notas a lo largo del fragmento evaluado,
+fallando en la detección de al menos un evento en
+cada uno de los acordes presentes. Por el contrario, Transkun transcribe los acordes iniciales a la perfección y reduce sus omisiones a
+un total de 5 notas, las cuales se localizan únicamente en los dos últimos acordes, coincidiendo con el punto de mayor saturación acústica.
+
+Este comportamiento resulta coherente con los valores de \textit{recall} observados en la Tabla~\ref{tab:pijama_resultados_comparativos}.
+En PiJAMA, Transkun obtiene un \textit{recall} superior al de MFT-FiLM en prácticamente todas las métricas evaluadas, lo que indica que el
+modelo tiende a detectar una mayor proporción de los eventos presentes en la señal de referencia. Esta tendencia se traduce directamente en el
+análisis perceptivo: las 5 omisiones de Transkun frente a las 17 de MFT-FiLM reflejan, a escala de fragmento, la misma diferencia sistemática
+que las métricas cuantitativas apuntan a nivel de corpus.
+
+En definitiva, este análisis perceptivo del fragmento corrobora que, si bien la alta densidad armónica del final de la
+secuencia supone un desafío complejo para ambas arquitecturas, el modelo Transkun ofrece una transcripción notablemente más robusta,
+precisa y fiel a la referencia MIDI.
+
+
 \section{Conclusiones}
 \label{sec:conclusiones_pijama}
+
+Este capítulo ha abordado la evaluación de MFT-FiLM y Transkun fuera del dominio
+clásico, utilizando PiJAMA como corpus de referencia para el piano \textit{jazz}. Los resultados
+obtenidos permiten extraer conclusiones tanto a nivel cuantitativo como cualitativo.
+
+En primer lugar, el análisis estadístico sobre MAESTRO ha evidenciado que el rendimiento
+de los sistemas de AMT está condicionado por factores musicales inherentes a las obras:
+la densidad de notas por segundo, la polifonía máxima y el compositor presentan un
+efecto significativo sobre el $F_1$ de \textit{note onset}. En particular, se observa una tendencia
+decreciente conforme el repertorio se aproxima a lenguajes pianísticos más densos y
+modernos, coherente con la evolución estilística de la escritura para piano.
+
+La evaluación sobre PiJAMA sugiere que dicha tendencia se mantiene al considerar un dominio
+jazzístico. La comparación con los resultados en MAESTRO muestra una degradación
+clara en todas las métricas al cambiar de dominio, siendo especialmente acusada en las
+métricas que incorporan \textit{offset} y velocidad. Este deterioro refleja que el \textit{jazz} introduce
+dificultades que van más allá de la detección de ataques, afectando también a la
+estimación de duraciones, articulación e intensidad.
+
+En cuanto a la comparación entre modelos, los resultados cuantitativos sobre PiJAMA
+no permiten establecer una superioridad clara de ninguno de los dos sistemas. Sin
+embargo, el análisis cualitativo del fragmento de \textit{Fly Me to the Moon} procesado mediante
+MIDI2ScoreTransformer revela diferencias relevantes: Transkun omite significativamente
+menos notas, concentra sus errores en las regiones de mayor saturación acústica y
+reproduce con mayor fidelidad las duraciones originales. En consecuencia, aunque la
+brecha cuantitativa es reducida, el análisis perceptivo posiciona a Transkun como mejor
+candidato en términos de generalización al dominio jazzístico.
+
+Cabe señalar, por último, que los resultados obtenidos sobre PiJAMA no son directamente
+comparables a los de MAESTRO en términos de rendimiento absoluto, dado que las
+anotaciones de PiJAMA son pseudo-etiquetas generadas automáticamente. No obstante,
+el conjunto resulta de gran utilidad para comparar el comportamiento relativo de ambos modelos, 
+sirve como precedente para una comparación práctica y permite analizar la tendencia de generalización
+observada a lo largo del capítulo.
 
 
 
@@ -2829,6 +3217,11 @@ Masataka Goto, Hiroki Hashiguchi, Takuichi Nishimura y Ryuichi Oka.
 Martin Pfleiderer, Klaus Frieler, Jakob Abe{\ss}er, Wolf-Georg Zaddach y Benjamin Burkhart.
 \newblock \textit{Inside the jazzomat: New perspectives for jazz research}.
 \newblock Schott Campus, 2017.
+
+\bibitem{beyer2024midi2score}
+Tim Beyer y Angela Dai.
+\newblock End-to-end piano performance-{MIDI} to score conversion with transformers.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 2024.
 
 \end{thebibliography}
 
