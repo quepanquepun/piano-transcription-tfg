@@ -187,15 +187,106 @@ Additionally, the generalization capability of both models is evaluated on the P
 
 \section{Motivación}
 
+La música constituye una de las formas de expresión artística y comunicación más
+importantes, y su estudio se apoya tradicionalmente en representaciones
+simbólicas como la partitura. Sin embargo, en la actualidad gran parte del
+contenido musical se conserva, difunde y consume principalmente en forma de
+audio. Existen innumerables grabaciones de gran calidad musical disponibles en
+plataformas digitales, archivos personales, vídeos o repositorios públicos, pero
+no siempre se dispone de una partitura, un archivo MIDI o una representación
+estructurada que permita estudiar, interpretar, editar o analizar dicha música.
 
-%===============================================================================
+Esta diferencia entre la abundancia de señales de audio y la escasez de
+representaciones musicales simbólicas motiva el desarrollo de sistemas de
+transcripción automática de música (\textit{Automatic Music Transcription},
+AMT). Esta tarea consiste en transformar una señal acústica en una representación
+simbólica de los eventos musicales interpretados, como un \textit{performance}
+MIDI o, posteriormente, una partitura. De esta forma, la AMT permite establecer
+un puente entre la música registrada como sonido y las representaciones
+utilizadas por músicos y sistemas informáticos para su análisis, reproducción o
+modificación.
+
+El caso del piano resulta especialmente relevante dentro de esta tarea, tanto por
+su importancia musical como por su complejidad técnica. Se trata de un
+instrumento polifónico, con un amplio rango de alturas, gran riqueza armónica y
+una fuerte interacción entre notas debido a la resonancia y al uso del pedal.
+
+La motivación personal de este trabajo surge de la unión de dos áreas que han
+sido fundamentales en mi formación: la música y la informática. Comencé a tocar
+el piano a los cinco años y finalicé el grado profesional de piano en el
+Conservatorio Profesional de Música de Las Palmas de Gran Canaria. Esta
+experiencia me ha permitido comprender la importancia de la partitura como
+herramienta de aprendizaje, interpretación y transmisión del conocimiento
+musical. Por otro lado, durante el grado en ingeniería informática he
+desarrollado un especial interés por el aprendizaje automático, el procesamiento
+de señales y los modelos de aprendizaje profundo. Este trabajo une ambos
+campos, aplicando técnicas avanzadas de inteligencia artificial a un problema
+estrechamente relacionado con la práctica musical.
+
+En los últimos años, los modelos neuronales han conseguido avances notables en
+la transcripción automática de piano, especialmente gracias a conjuntos de datos
+como MAESTRO y a arquitecturas capaces de aprender representaciones complejas a
+partir del audio. No obstante, el rendimiento de estos sistemas no debe
+analizarse únicamente en el dominio en el que han sido entrenados. La música real
+presenta una gran variedad de estilos, condiciones acústicas y formas de
+interpretación. En particular, el \textit{jazz} plantea características
+diferenciales, como una mayor libertad rítmica, uso frecuente de armonías
+complejas e interpretaciones menos ajustadas a patrones clásicos. Por ello,
+resulta relevante estudiar hasta qué punto los modelos actuales generalizan a
+este tipo de repertorio.
 
 \section{Objetivos}
 
+El objetivo general de este trabajo es estudiar, entrenar y evaluar modelos de aprendizaje
+profundo para la transcripción automática de piano, prestando especial atención
+a su rendimiento en el dominio estándar y a su capacidad de generalización sobre
+música \textit{jazz}. Para ello, se plantean los siguientes objetivos específicos:
 
-%===============================================================================
+\begin{enumerate}
+    \item Estudiar los fundamentos teóricos de la transcripción automática de
+    música para piano.
+
+    \item Entrenar y evaluar un modelo MFT-FiLM, analizando su arquitectura, su enfoque multitarea y su rendimiento
+    sobre los datos de referencia.
+
+    \item Entrenar y evaluar un modelo Transkun (\textit{semi-CRF2}), estudiando
+    su formulación basada en \textit{transformers}, eventos musicales y modelos
+    \textit{semi-CRF}.
+
+    \item Comparar el comportamiento de ambos modelos mediante métricas
+    cuantitativas estándar y analizar su comportamiento en MAESTRO.
+
+    \item Evaluar la capacidad de generalización de MFT-FiLM y Transkun sobre
+    música \textit{jazz}, analizando el impacto del cambio de dominio.
+\end{enumerate}
+
+
 
 \section{Estructura de la memoria}
+
+La memoria se organiza en siete capítulos. El
+Capítulo~\ref{chap:preliminares} presenta los conceptos preliminares necesarios para el desarrollo del
+trabajo, incluyendo fundamentos de aprendizaje automático y profundo,
+arquitecturas basadas en \textit{transformers}, transcripción automática de
+música y representaciones musicales como audio, espectrogramas, MIDI y
+partitura. El Capítulo~\ref{chap:maestro} describe el conjunto de datos MAESTRO, empleado como
+referencia en la transcripción automática de piano, así como sus características,
+limitaciones y protocolo de evaluación.
+
+A continuación, los Capítulos~\ref{chap:mft} y \ref{chap:transkun} se dedican al estudio experimental de los
+dos modelos principales del trabajo: MFT-FiLM y Transkun \textit{semi-CRF2},
+respectivamente. En ambos casos se presentan sus fundamentos, arquitectura,
+proceso de entrenamiento y evaluación. El Capítulo~\ref{chap:comparacion_jazz} analiza la capacidad de
+generalización de estos modelos sobre música jazz, comparando su comportamiento
+frente al dominio estándar. Finalmente, el Capítulo~\ref{chap:conclusiones} recoge las conclusiones
+generales del trabajo y plantea posibles líneas de trabajo futuro.
+
+Se recomienda leer la memoria de forma secuencial, ya que cada capítulo se apoya
+en los conceptos introducidos en los anteriores. Asimismo, incluso si el lector
+dispone de conocimientos previos sobre aprendizaje automático y aprendizaje
+profundo, se aconseja revisar las Secciones~\ref{secpreliminaresamt}, \ref{secpreliminaresaudio}, \ref{secpreliminaresrepmusical}, \ref{sec:midi2scoretransformer}, donde se
+presentan conceptos musicales que resultan fundamentales para comprender el desarrollo experimental
+del trabajo.
 
 
 %===============================================================================
@@ -210,6 +301,7 @@ Additionally, the generalization capability of both models is evaluated on the P
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \chapter{Preliminares}
+\label{chap:preliminares}
 
 \section{Aprendizaje automático}
 \label{secpreliminaresml}
@@ -663,6 +755,7 @@ funciona con las versiones actuales de las bibliotecas, garantizando su estabili
 %==============================================================================
 
 \chapter{MAESTRO}
+\label{chap:maestro}
 
 \section{Introducción}
 Uno de los principales factores que limitan el rendimiento de los sistemas de AMT basados en el aprendizaje
@@ -1024,6 +1117,7 @@ más representativa de la calidad de la transcripción completa.
 %==============================================================================
 
 \chapter{MFT-FiLM}
+\label{chap:mft}
 
 \section{Introducción}
 
@@ -1710,6 +1804,7 @@ capaz de aproximarse al estado del arte con un coste computacional significativa
 %==============================================================================
 
 \chapter{Transkun}
+\label{chap:transkun}
 
 \section{Introducción}
 
@@ -1778,7 +1873,7 @@ que servirá de referencia para las explicaciones sobre este modelo.
   hasta la resolución original $T$. Los \textit{embeddings} $\mathbf{h}_i \in
   \mathbb{R}^{128}$ resultantes se usan en dos ramas paralelas: el módulo de
   \foreign{english}{scoring} por producto interior escalado (que alimenta la capa
-  semi-CRF para producir los intervalos no solapados) y el Attribute MLP (que
+  \textit{semi-CRF} para producir los intervalos no solapados) y el Attribute MLP (que
   predice velocidad, posiciones subframe e indicadores de segmento).}
   \label{fig:transkun_overview}
 \end{figure}
@@ -1796,7 +1891,7 @@ En la Figura~\ref{fig:transkun_overview} se pueden ver las cinco etapas funciona
         jerárquico.
   \item El remuestreo temporal de los \foreign{english}{event tracks} y el
         \foreign{english}{scoring} por producto interior.
-  \item La decodificación mediante la capa semi-CRF y la predicción de
+  \item La decodificación mediante la capa \textit{semi-CRF} y la predicción de
         atributos.
 \end{enumerate}
 
@@ -1823,7 +1918,7 @@ requiere la estructura de octavas de la CQT.
 
 Para mejorar la resolución temporal de la representación espectral sin reducir el
 salto de trama, se aplica una estrategia de \textbf{sobremuestreo de ventanas}
-(\foreign{english}{multi-window oversampling}) heredada del semi-CRF
+(\foreign{english}{multi-window oversampling}) heredada del \textit{semi-CRF}
 original~\cite{yan2021semicrf1}: en lugar de una única ventana de \textit{Hanning} por
 trama, se aplican \textbf{cinco subventanas de Hanning ajustables} (inicializadas con centros 
 equidistantes y varianza constante) sobre cada trama
@@ -2022,9 +2117,9 @@ $T' = T/8$, y se pasan a la etapa de remuestreo.
 
 Tras el \textit{encoder}, los \foreign{english}{event tracks} se remuestrean temporalmente
 y se emplean para calcular la matriz de \foreign{english}{scoring} que alimenta la
-capa semi-CRF. Esta sección describe estas dos últimas etapas del sistema: el
+capa \textit{semi-CRF}. Esta sección describe estas dos últimas etapas del sistema: el
 remuestreo temporal y el módulo de \foreign{english}{scoring} por producto interior
-escalado, el marco semi-CRF y su justificación teórica.
+escalado, el marco \textit{semi-CRF} y su justificación teórica.
 
 
 Dado que los \foreign{english}{event tracks} operan en la resolución temporal
@@ -2051,7 +2146,7 @@ que se satisface ampliamente en la práctica para el piano~\cite{yan2024transkun
 Para una secuencia de $T$ tramas de audio, la transcripción se formula como la
 inferencia de un conjunto $\mathcal{Y}$ de intervalos cerrados no solapados $[i,
 j]$, donde $i$ y $j$ son índices de trama de inicio y fin respectivamente, y
-cada intervalo se asocia a un tipo de evento específico. El semi-CRF modela
+cada intervalo se asocia a un tipo de evento específico. El \textit{semi-CRF} modela
 directamente esta estructura definiendo, para cada tipo de evento, dos tipos de
 puntuaciones a partir de la señal de audio
 $\mathcal{X}$~\cite{yan2021semicrf1,yan2024transkun}:
@@ -2101,13 +2196,13 @@ Para el \textbf{entrenamiento}, se emplea estimación de máxima verosimilitud
 de intervalos no solapados. Este término de normalización, equivalente a la función
 de partición del modelo, se computa eficientemente mediante el algoritmo
 \foreign{english}{forward-backward}~\cite{yan2021semicrf1}. Se instancia un
-semi-CRF independiente para cada tipo de evento, procesando en paralelo los 88
+\textit{semi-CRF} independiente para cada tipo de evento, procesando en paralelo los 88
 tipos de nota y los pedales, tal como indica la anotación $\times 91$ en la
 Figura~\ref{fig:transkun_overview}.
 
 
 El módulo de \foreign{english}{scoring} calcula la matriz $\text{score}(i, j)$
-a partir de los \foreign{english}{event tracks} remuestreados. En el semi-CRF
+a partir de los \foreign{english}{event tracks} remuestreados. En el \textit{semi-CRF}
 original~\cite{yan2021semicrf1}, este módulo empleaba un MLP que tomaba como
 entrada los \textit{embeddings} de los extremos del intervalo
 $\boldsymbol{h}_i$ y $\boldsymbol{h}_j$, su producto de Hadamard
@@ -2218,7 +2313,7 @@ $\boldsymbol{q}_i$ y un vector de clave $\boldsymbol{k}_j$, escalado por
 $1/\sqrt{D}$. La diferencia estructural fundamental reside en la
 \textbf{normalización}: la atención normaliza por posición mediante
 \textit{softmax}, produciendo una distribución de probabilidad local por fila,
-mientras que el semi-CRF normaliza de forma \textbf{global} sobre todos los
+mientras que el \textit{semi-CRF} normaliza de forma \textbf{global} sobre todos los
 posibles conjuntos de intervalos no solapados $\mathcal{Y}'$, garantizando que la
 decodificación sea globalmente óptima en lugar de localmente
 \textit{greedy}~\cite{yan2024transkun}.
@@ -2237,14 +2332,14 @@ estándar~\cite{yan2024transkun}.
 \section{Predicción de atributos y procesado por segmentos}
 \label{sec:transkun_attrs}
 
-La capa semi-CRF produce, tras la decodificación MAP, un conjunto de intervalos
+La capa \textit{semi-CRF} produce, tras la decodificación MAP, un conjunto de intervalos
 $[i, j]$ para cada tipo de evento con precisión de trama. Sin embargo, la
 representación MIDI final requiere información adicional: la \textbf{velocidad}
 de cada nota, las \textbf{posiciones subframe} de inicio y fin para obtener
 los instantes exactos de \textit{onset} y \textit{offset}, y un par de \textbf{indicadores binarios}
 para gestionar correctamente los eventos que cruzan los límites entre segmentos
 de audio consecutivos. Estos atributos se predicen, en paralelo con la
-decodificación semi-CRF, mediante el Attribute MLP visible en la rama derecha de
+decodificación \textit{semi-CRF}, mediante el Attribute MLP visible en la rama derecha de
 la Figura~\ref{fig:transkun_overview}.
 
 
@@ -2279,7 +2374,7 @@ Figura~\ref{fig:transkun_overview}:
 \end{itemize}
 
 La pérdida de entrenamiento del módulo de predicción de atributos se suma a la
-log-verosimilitud del semi-CRF (Ecuación~\ref{eq:semicrf_mle}), de forma que el
+log-verosimilitud del \textit{semi-CRF} (Ecuación~\ref{eq:semicrf_mle}), de forma que el
 objetivo total es~\cite{yan2024transkun}:
 
 \begin{equation}
@@ -2311,7 +2406,7 @@ segundos de solape), y los eventos decodificados en cada segmento se ensamblan
 en una secuencia global~\cite{yan2024transkun}.
 
 El principal desafío de esta estrategia es la gestión de los eventos que
-\textbf{cruzan el límite} de un segmento. El semi-CRF original~\cite{yan2021semicrf1}
+\textbf{cruzan el límite} de un segmento. El \textit{semi-CRF} original~\cite{yan2021semicrf1}
 descartaba directamente estos eventos durante el entrenamiento. Transkun adopta
 una solución más precisa: \textbf{truncar} el evento en el límite del segmento e
 introducir los indicadores binarios \texttt{hasOnset} y \texttt{hasOffset} para
@@ -2363,7 +2458,7 @@ finalización del entrenamiento, se recoge en el Anexo~\ref{anx:transkun_config}
 
 Antes del entrenamiento, se ejecuta una fase de preprocesamiento del \textit{dataset}. A diferencia del flujo empleado
 en MFT-FiLM, Transkun calcula sus espectrogramas log-mel en tiempo de entrenamiento a partir de los audios originales de
-MAESTRO, sin necesidad de almacenar una caché intermedia de representaciones tiempo--frecuencia. Los archivos MIDI se procesan para generar los conjuntos de intervalos de \textit{ground truth} que alimentan la capa semi-CRF durante el entrenamiento \cite{yan2024transkun}.
+MAESTRO, sin necesidad de almacenar una caché intermedia de representaciones tiempo--frecuencia. Los archivos MIDI se procesan para generar los conjuntos de intervalos de \textit{ground truth} que alimentan la capa \textit{semi-CRF} durante el entrenamiento \cite{yan2024transkun}.
 
 A continuación se analizan los resultados obtenidos por el modelo Transkun entrenado sobre MAESTRO~v3.0.0. Las métricas
 empleadas en el conjunto de \textit{test} coinciden con el protocolo estándar descrito en la Sección~\ref{sec:metricas}: precisión, \textit{recall} y $F_1$ a
@@ -2390,14 +2485,14 @@ el primer instante en que el modelo comienza a procesar datos.
 
 La curva de la Figura~\ref{fig:transkunlossprimeraepoca} muestra el comportamiento típico de un \textit{transformer} con pesos
 inicializados aleatoriamente: una caída inicial muy pronunciada en los primeros lotes, característica de modelos que parten de
-predicciones casi uniformes sobre el espacio de intervalos del semi-CRF y donde cualquier ajuste de parámetros produce una ganancia
+predicciones casi uniformes sobre el espacio de intervalos del \textit{semi-CRF} y donde cualquier ajuste de parámetros produce una ganancia
 inmediata y elevada en la verosimilitud, seguida de un descenso progresivo pero ruidoso. Las oscilaciones de amplitud
 considerable son el comportamiento esperado cuando se entrena con lotes de tamaño moderado, pues la dificultad
 intrínseca de cada lote varía según la densidad polifónica y el \textit{tempo} de la interpretación, introduciendo
 varianza natural en la estimación del gradiente. A lo largo de toda la época, la tendencia decreciente se mantiene
 sin señales de estancamiento ni de divergencia. Cabe destacar que la magnitud absoluta de la pérdida es intrínseca
 a la función objetivo de Transkun: a diferencia de la suma de entropías cruzadas binarias empleada en MFT-FiLM,
-el \textit{meanNLL} del semi-CRF normaliza sobre el espacio de todos los conjuntos de intervalos no solapados
+el \textit{meanNLL} del \textit{semi-CRF} normaliza sobre el espacio de todos los conjuntos de intervalos no solapados
 posibles, por lo que sus valores no son directamente comparables en escala con los del capítulo anterior.
 
 Continuamos con la pérdida general. La Figura~\ref{fig:transkunlosstrainval} presenta la evolución de la función de pérdida a
@@ -3451,8 +3546,93 @@ observada a lo largo del capítulo.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \chapter{Conclusiones}
+\label{chap:conclusiones}
 
-????? ????????????? ????????????? ????????????? ????????????? ????????????? 
+\section{Resumen del trabajo realizado}
+
+En este trabajo se ha estudiado la transcripción automática de música para piano mediante modelos de aprendizaje profundo,
+con especial atención a su rendimiento en repertorio clásico y a su capacidad de generalización sobre música \textit{jazz}.
+Para ello, se han analizado los fundamentos teóricos del problema, las representaciones de audio y simbólicas utilizadas en
+AMT, las métricas de evaluación habituales y las características de los conjuntos de datos empleados.
+
+En la parte experimental se han entrenado y evaluado dos modelos representativos del estado del arte: MFT-FiLM y Transkun.
+El primero aborda la transcripción como una tarea multitarea basada en la predicción de \textit{frames}, \textit{onsets},
+\textit{offsets} y velocidades, incorporando mecanismos FiLM para modular las representaciones internas. El segundo plantea
+el problema desde una formulación basada en eventos musicales, \textit{transformers} y modelos \textit{semi-CRF}, lo que
+permite representar directamente intervalos de nota y reducir la dependencia de heurísticas de postprocesado.
+
+Los resultados obtenidos muestran que ambos modelos son muy competentes en el dominio clásico, evaluado sobre MAESTRO,
+alcanzando métricas próximas al estado del arte. Sin embargo, al trasladar la evaluación al dominio \textit{jazz}, mediante
+PiJAMA, se observa una degradación considerable del rendimiento. Esta caída confirma que un buen comportamiento sobre repertorio
+clásico no garantiza una generalización equivalente a otros estilos, incluso cuando el instrumento y la tarea permanecen constantes.
+
+El análisis realizado indica, además, que las diferencias de rendimiento no dependen únicamente de factores cuantitativos
+como el número de notas por segundo o la polifonía máxima. Aunque estos elementos influyen en la dificultad de la
+transcripción, el estilo musical, las dinámicas, la articulación, el uso del pedal y las resonancias modifican de forma
+significativa la representación del audio en el espectrograma. Por ello, piezas aparentemente similares en complejidad
+pueden presentar niveles de dificultad muy distintos para los modelos.
+
+En la comparación entre MFT-FiLM y Transkun, los resultados cuantitativos en \textit{jazz} son cercanos, pero el
+análisis cualitativo sugiere que Transkun presenta un comportamiento más robusto fuera del dominio clásico. En
+particular, tiende a conservar mejor ciertas duraciones y a cometer menos omisiones en pasajes complejos, por
+lo que se perfila como el mejor candidato en términos de generalización.
+
+\section{Objetivos alcanzados}
+
+Los objetivos planteados al inicio del trabajo se han alcanzado de forma satisfactoria:
+
+\begin{enumerate}
+    \item \textbf{Estudiar los fundamentos teóricos de la transcripción automática de música para piano.}  
+    Se han presentado los conceptos esenciales de aprendizaje profundo, representación del audio, representación
+    simbólica de la música y evaluación de sistemas de transcripción automática, estableciendo el marco necesario
+    para el desarrollo experimental posterior.
+
+    \item \textbf{Entrenar y evaluar un modelo MFT-FiLM para la transcripción automática de piano, analizando su
+    arquitectura, su enfoque multitarea y su rendimiento sobre los datos de referencia.}  
+    Se ha estudiado la arquitectura del modelo, sus módulos de modulación FiLM y su formulación multitarea. Asimismo,
+    se ha entrenado y evaluado sobre MAESTRO, obteniendo resultados competitivos y coherentes con los esperados para
+    este tipo de aproximaciones.
+
+    \item \textbf{Entrenar y evaluar un modelo Transkun (\textit{semi-CRF2}), estudiando su formulación basada en
+    \textit{transformers}, eventos musicales y modelos \textit{semi-CRF}.}  
+    Se ha analizado su formulación basada en eventos, su arquitectura \textit{transformer} y el uso de modelos
+    \textit{semi-CRF} para la predicción de intervalos de nota. Los experimentos han confirmado su alto rendimiento
+    en el dominio clásico.
+
+    \item \textbf{Comparar el comportamiento de ambos modelos mediante métricas cuantitativas estándar y analizar
+    su comportamiento en MAESTRO.}  
+    Se ha realizado una comparación sistemática de MFT-FiLM y Transkun sobre MAESTRO. Ambos modelos muestran un
+    rendimiento elevado, aunque Transkun obtiene mejores resultados en varias métricas exigentes, especialmente
+    aquellas que consideran duración y velocidad.
+
+    \item \textbf{Evaluar la capacidad de generalización de MFT-FiLM y Transkun sobre música jazz, analizando el
+    impacto del cambio de dominio.}  
+    Se han evaluado ambos modelos sobre PiJAMA y se ha comprobado que el cambio de dominio provoca una caída notable
+    de rendimiento. Esta evaluación ha permitido identificar la generalización estilística como una de las principales
+    limitaciones actuales de los modelos estudiados.
+\end{enumerate}
+
+\section{Trabajo futuro}
+
+La principal línea de trabajo futuro consiste en disponer de conjuntos de datos más amplios, diversos y
+perfectamente alineados para distintos estilos musicales. Aunque MAESTRO ofrece pares audio--MIDI de
+gran calidad, su distribución está centrada en repertorio clásico. Para entrenar modelos con mayor
+capacidad de generalización sería necesario contar con datos \textit{performance} MIDI y audio sincronizados con precisión
+en estilos como \textit{jazz}, música contemporánea, improvisación u otros repertorios pianísticos.
+
+Esta tarea no es sencilla. La adquisición de datos de este tipo requiere instrumentación especializada,
+como pianos acústicos con captura MIDI de alta precisión y sistemas profesionales de grabación, cuyo coste
+es elevado. Además, los modelos de aprendizaje profundo necesitan una gran cantidad de interpretaciones para
+aprender patrones generales y no depender en exceso de un único estilo, intérprete o condición de grabación.
+
+Desde el punto de vista arquitectónico, también sería interesante explorar modelos de mayor tamaño y capacidad,
+así como representaciones de entrada con mayor resolución. Mejorar la resolución temporal y frecuencial de los
+espectrogramas podría facilitar la detección de ataques próximos, colas de resonancia, variaciones dinámicas y
+patrones de articulación característicos de estilos más complejos. Del mismo modo, modelos más grandes podrían
+capturar dependencias musicales de mayor alcance, aunque a costa de un incremento significativo en los recursos
+computacionales necesarios.
+
+Finalmente, sería conveniente profundizar en estrategias de adaptación de dominio y entrenamiento multigénero. Entrenar modelos sobre repertorios estilísticamente más variados, o ajustar modelos previamente entrenados sobre MAESTRO con datos específicos de otros dominios, podría reducir la caída de rendimiento observada en \textit{jazz}. En conjunto, avanzar en estas líneas permitiría desarrollar sistemas de transcripción automática de piano más robustos, precisos y útiles en contextos musicales reales.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                BIBLIOGRAFIA                                 %
