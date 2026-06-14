@@ -104,14 +104,14 @@ Addicionalment, s'avalua la capacitat de generalització de tots dos models sobr
 \begin{abstract}[spanish]
 La transcripción automática de música (AMT) constituye uno de los problemas centrales de la recuperación de información musical (MIR), cuyo objetivo es convertir una señal de audio en una representación simbólica de la música interpretada.
 En el caso del piano, el objetivo es obtener a partir del audio una representación MIDI que capture con precisión los eventos de nota (tono, inicio, final y dinámica) presentes en la interpretación. Este trabajo aborda la replicación y evaluación de dos sistemas del estado del arte para la transcripción automática.
-En primer lugar, se entrena un modelo MFT-FiLM (\foreign{english}{Multitask Frequency-Time Feature-wise Linear Modulation}) que combina convoluciones espectrales y redes recurrentes bidireccionales para la estimación conjunta de \textit{onsets}, \textit{offsets}, \textit{frames} y velocidades. A continuación, se entrena un modelo Transkun, un sistema basado en \textit{transformers} que aborda la transcripción como un problema de traducción de secuencias. Ambos modelos se evalúan de forma cuantitativa sobre el conjunto de test de MAESTRO siguiendo el protocolo estándar (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
-Adicionalmente se evalúa la capacidad de generalización de ambos modelos sobre el \textit{dataset} PiJAMA, cuya distribución de repertorio y audio difiere de MAESTRO.
+En primer lugar, se entrena un modelo MFT-FiLM (\foreign{english}{Multitask Frequency-Time Feature-wise Linear Modulation}) que combina convoluciones espectrales y redes recurrentes bidireccionales para la estimación conjunta de \textit{onsets}, \textit{offsets}, \textit{frames} y velocidades. A continuación, se entrena un modelo Transkun, un sistema basado en \textit{transformers} que aborda la transcripción como un problema de traducción de secuencias. Ambos modelos se evalúan de forma cuantitativa sobre el conjunto de \textit{test} de MAESTRO siguiendo el protocolo estándar (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
+Adicionalmente, se evalúa la capacidad de generalización de ambos modelos sobre el \textit{dataset} PiJAMA, cuya distribución de repertorio y audio difiere de MAESTRO.
 \end{abstract}
 \begin{abstract}[english]
 Automatic Music Transcription (AMT) constitutes one of the core problems in Music Information Retrieval (MIR), aiming to convert an audio signal into a symbolic representation of the performed music.
 In the case of the piano, the goal is to obtain a MIDI representation from the audio that accurately captures the note events (pitch, onset, offset, and dynamics) present in the performance. This work addresses the replication and evaluation of two state-of-the-art systems for automatic transcription.
-First, an MFT-FiLM (Multitask Frequency-Time Feature-wise Linear Modulation) model is trained, which combines spectral convolutions and bidirectional recurrent networks for the joint estimation of onsets, offsets, frames, and velocities. Next, a Transkun model is trained, a \textit{transformer}-based system that approaches transcription as a sequence translation problem. Both models are quantitatively evaluated on the MAESTRO test set following the standard protocol (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
-Additionally, the generalization capability of both models is evaluated on the PiJAMA \textit{dataset}, whose repertoire and audio distribution differs from MAESTRO.
+First, an MFT-FiLM (Multitask Frequency-Time Feature-wise Linear Modulation) model is trained, which combines spectral convolutions and bidirectional recurrent networks for the joint estimation of onsets, offsets, frames, and velocities. Next, a Transkun model is trained, a transformer-based system that approaches transcription as a sequence translation problem. Both models are quantitatively evaluated on the MAESTRO test set following the standard protocol (\texorpdfstring{\texttt{mir\_eval}}{mir_eval}).
+Additionally, the generalization capability of both models is evaluated on the PiJAMA dataset, whose repertoire and audio distribution differ from MAESTRO.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,7 +141,7 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{CC}{\textit{Control Change}}
 \acronym{CCE}{\textit{Categorical Cross-Entropy}}
 \acronym{CNN}{\textit{Convolutional Neural Network}}
-\acronym{Conv1D}{Convolución unidimensional}
+\acronym{Conv1D}{\textit{One-Dimensional Convolution}}
 \acronym{CQT}{\textit{Constant-Q Transform}}
 \acronym{CRF}{\textit{Conditional Random Field}}
 \acronym{CSV}{\textit{Comma-Separated Values}}
@@ -169,25 +169,24 @@ Additionally, the generalization capability of both models is evaluated on the P
 \acronym{MLP}{\textit{Multilayer Perceptron}}
 \acronym{MSE}{\textit{Mean Squared Error}}
 \acronym{MTL}{\textit{Multitask Learning}}
-\acronym{MusicXML}{\textit{Music Extensible Markup Language}}
 
 \acronym{NLL}{\textit{Negative Log-Likelihood}}
 \acronym{NMF}{\textit{Non-negative Matrix Factorization}}
 
 \acronym{PCM}{\textit{Pulse Code Modulation}}
-\acronym{PiJAMA}{\textit{Piano jazz with Automatic MIDI Annotations}}
+\acronym{PiJAMA}{\textit{Piano Jazz with Automatic MIDI Annotations}}
 
 \acronym{ReLU}{\textit{Rectified Linear Unit}}
 \acronym{RMSNorm}{\textit{Root Mean Square Layer Normalization}}
-\acronym{RoFormer}{\textit{Rotary Transformer}}
-\acronym{RoPE}{\textit{Rotary Positional Embeddings}}
+
+\acronym{RoPE}{\textit{Rotary Positional Embedding}}
 
 \acronym{SLURM}{\textit{Simple Linux Utility for Resource Management}}
+\acronym{SOTA}{\textit{State of the Art}}
 \acronym{STFT}{\textit{Short-Time Fourier Transform}}
 \acronym{SwiGLU}{\textit{Swish-Gated Linear Unit}}
 
 \acronym{ViT}{\textit{Vision Transformer}}
-\acronym{VRAM}{\textit{Video Random Access Memory}}
 
 \acronym{WAV}{\textit{Waveform Audio File Format}}
 
@@ -219,7 +218,7 @@ importantes, y su estudio se apoya tradicionalmente en representaciones
 simbólicas como la partitura. Sin embargo, en la actualidad gran parte del
 contenido musical se conserva, difunde y consume principalmente en forma de
 audio. Existen innumerables grabaciones de gran calidad musical disponibles en
-plataformas digitales, archivos personales, vídeos o repositorios públicos, pero
+plataformas digitales y repositorios públicos, pero
 no siempre se dispone de una partitura, un archivo MIDI o una representación
 estructurada que permita estudiar, interpretar, editar o analizar dicha música.
 
@@ -252,8 +251,8 @@ estrechamente relacionado con la práctica musical.
 
 En los últimos años, los modelos neuronales han conseguido avances notables en
 la transcripción automática de piano, especialmente gracias a conjuntos de datos
-como MAESTRO y a arquitecturas capaces de aprender representaciones complejas a
-partir del audio. No obstante, el rendimiento de estos sistemas no debe
+como MAESTRO~\cite{magenta2020maestrov3} y a arquitecturas capaces de aprender representaciones complejas a
+partir del audio. Entre los modelos más representativos del estado del arte reciente se encuentran Transkun~\cite{yan2024transkun} y MFT-FiLM~\cite{wang2025mftfilm}. No obstante, el rendimiento de estos sistemas no debe
 analizarse únicamente en el dominio en el que han sido entrenados. La música real
 presenta una gran variedad de estilos, condiciones acústicas y formas de
 interpretación. En particular, el \textit{jazz} plantea características
@@ -275,11 +274,11 @@ música \textit{jazz}. Para ello, se plantean los siguientes objetivos:
 
     \item Entrenar y evaluar un modelo MFT-FiLM, analizando su arquitectura y su enfoque multitarea.
 
-    \item Entrenar y evaluar un modelo Transkun (\textit{semi-CRF2}), estudiando
+    \item Entrenar y evaluar un modelo Transkun (\textit{Semi-CRF V2}), estudiando
     su formulación basada en \textit{transformers}, eventos musicales y modelos
     \textit{semi-CRF}.
 
-    \item Comparar el comportamiento de ambos modelos mediante métricas
+    \item Comparar el rendimiento de ambos modelos mediante métricas
     cuantitativas estándar y analizar su comportamiento en MAESTRO.
 
     \item Evaluar la capacidad de generalización de MFT-FiLM y Transkun sobre
@@ -300,7 +299,7 @@ referencia en la transcripción automática de piano, así como sus característ
 limitaciones y protocolo de evaluación.
 
 A continuación, los Capítulos~\ref{chap:mft} y \ref{chap:transkun} se dedican al estudio experimental de los
-dos modelos principales del trabajo: MFT-FiLM y Transkun \textit{semi-CRF2},
+dos modelos principales del trabajo: MFT-FiLM y Transkun (\textit{Semi-CRF V2}),
 respectivamente. En ambos casos se presentan sus fundamentos, arquitectura,
 proceso de entrenamiento y evaluación. El Capítulo~\ref{chap:comparacion_jazz} analiza la capacidad de
 generalización de estos modelos sobre música \textit{jazz}, comparando su comportamiento
@@ -310,7 +309,7 @@ generales del trabajo y plantea posibles líneas de trabajo futuro.
 La exposición de la memoria sigue un orden secuencial, de modo que cada capítulo
 se apoya en los conceptos introducidos en los anteriores. Asimismo, incluso si el lector
 dispone de conocimientos previos sobre aprendizaje automático y aprendizaje
-profundo, se aconseja revisar las Secciones~\ref{secpreliminaresamt}, \ref{secpreliminaresaudio}, \ref{secpreliminaresrepmusical}, \ref{sec:midi2scoretransformer}, donde se
+profundo, se aconseja revisar las Secciones~\ref{secpreliminaresamt}, \ref{secpreliminaresaudio}, \ref{secpreliminaresrepmusical} y \ref{sec:midi2scoretransformer}, en las que se
 presentan conceptos musicales que resultan fundamentales para comprender el desarrollo experimental
 del trabajo.
 
@@ -335,10 +334,10 @@ del trabajo.
 El aprendizaje automático es la rama de la inteligencia artificial que estudia
 el diseño de algoritmos capaces de mejorar su rendimiento en una clase de tareas
 a partir de la experiencia. La definición formal más extendida, recogida por
-Murphy~\cite{murphy2022pml}, es la de Mitchell: \textit{``se dice que un programa
+Murphy~\cite{murphy2022pml}, es la de Mitchell (traducida al español): \textit{<<se dice que un programa
 aprende de la experiencia~$E$ con respecto a una clase de tareas~$T$ y una métrica
-de rendimiento~$R$, si su rendimiento en las tareas de~$T$, medido por~$R$, mejora
-con la experiencia~$E$''}. Esta definición unifica bajo un mismo marco algoritmos
+de rendimiento~$P$, si su rendimiento en las tareas de~$T$, medido por~$P$, mejora
+con la experiencia~$E$>>}. Esta definición unifica bajo un mismo marco algoritmos
 de naturaleza muy diversa, desde la regresión lineal hasta las arquitecturas de
 aprendizaje profundo empleadas en este trabajo.
 
@@ -380,8 +379,8 @@ se distinguen tres paradigmas fundamentales~\cite{murphy2022pml,murphy2023adv}:
     interacción dinámica entre el agente y el entorno~\cite{murphy2022pml}.
 \end{itemize}
 
-Junto a estos tres paradigmas, Murphy~\cite{murphy2023adv} identifica el
-\textbf{aprendizaje semi-supervisado} (\textit{semi-supervised learning}) como
+Junto a estos paradigmas, Murphy~\cite{murphy2023adv} identifica el
+\textbf{aprendizaje semisupervisado} (\textit{semi-supervised learning}) como
 un escenario de creciente interés práctico, en el que se combinan un conjunto
 reducido de datos etiquetados con una cantidad mayor de datos sin etiquetar.
 Este enfoque es especialmente valioso en dominios donde la obtención de
@@ -394,7 +393,7 @@ datos no etiquetados para mejorar la capacidad de generalización del modelo.
 El aprendizaje profundo (\textit{deep learning}) es una rama del aprendizaje
 automático que emplea redes neuronales artificiales con múltiples capas de
 procesamiento para aprender representaciones jerárquicas de los datos
-directamente a partir de los datos crudos, sin necesidad de extracción manual
+directamente a partir de datos no procesados, sin necesidad de extracción manual
 de características~\cite{murphy2022pml}.
 
 El \textbf{perceptrón multicapa} (\textit{Multilayer Perceptron}, MLP) es la
@@ -419,14 +418,15 @@ Figura~\ref{figmlp} ilustra la arquitectura de un MLP con dos capas ocultas.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.78\textwidth]{figuras/mlp.png}
-    \caption{Arquitectura de un perceptrón multicapa con dos capas ocultas.}
+    \caption[Arquitectura de un perceptrón multicapa con dos capas ocultas]{%
+    Arquitectura de un perceptrón multicapa con dos capas ocultas.}
     \label{figmlp}
 \end{figure}
 
 Una extensión natural del MLP que explota la estructura local de los datos son
 las \textbf{redes neuronales convolucionales} (\textit{Convolutional Neural
 Networks}, CNN). En lugar de conectar cada neurona con todas las de la capa
-anterior, emplean filtros de peso compartido que se desplazan a lo largo de la
+anterior, se emplean filtros de peso compartido que se desplazan a lo largo de la
 entrada~\cite{murphy2022pml}. En su variante unidimensional (Conv1D), cada
 filtro de tamaño $K$ calcula en cada posición $t$:
 
@@ -444,7 +444,8 @@ entrada~\cite{murphy2022pml}. La Figura~\ref{figconv1d} ilustra esta operación.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.78\textwidth]{figuras/conv.png}
-    \caption{Convolución 1D con kernel de tamaño $K=3$ y stride $s=1$.}
+    \caption[Convolución 1D con kernel de tamaño $K=3$ y \textit{stride} $s=1$]{%
+    Convolución 1D con kernel de tamaño $K=3$ y \textit{stride} $s=1$.}
     \label{figconv1d}
 \end{figure}
 
@@ -461,7 +462,7 @@ transferencia negativa: situaciones en las que el entrenamiento
 conjunto perjudica alguna tarea debido a gradientes conflictivos entre
 ellas~\cite{ruder2017multitask}.
 
-\section{Transformers}
+\section{\textit{Transformers}}
 \label{secpreliminarestransformer}
 
 Los \textit{transformers} son una familia de arquitecturas de red neuronal propuesta por Vaswani
@@ -470,7 +471,7 @@ y la convolución, sustituyéndolas por un mecanismo de \textbf{autoatención}
 (\textit{self-attention}) capaz de modelar dependencias entre cualquier par de
 posiciones de una secuencia en un único paso de cómputo. Esta propiedad, junto
 con su alta capacidad de paralelización durante el entrenamiento, ha convertido al
-\textit{Transformer} en una de las arquitecturas dominantes en numerosos ámbitos del
+\textit{transformer} en una de las arquitecturas dominantes en numerosos ámbitos del
 aprendizaje profundo~\cite{murphy2022pml}.
 
 El mecanismo de autoatención opera sobre tres matrices derivadas de la entrada:
@@ -486,7 +487,7 @@ cuadrada de su dimensión $d_k$~\cite{vaswani2017attention}:
 \end{equation}
 
 En la práctica, este mecanismo se aplica en paralelo $H$ veces con proyecciones
-lineales independientes, dando lugar a la \textbf{atención multi-cabeza}
+lineales independientes, dando lugar a la \textbf{atención multicabeza}
 (\textit{multi-head attention}), que permite al modelo atender simultáneamente
 a información procedente de distintos subespacios de representación~\cite{vaswani2017attention}.
 
@@ -496,16 +497,17 @@ un diseño \textit{encoder--decoder}.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.52\textwidth]{figuras/transformer.png}
-    \caption{Arquitectura \textit{Transformer encoder--decoder} original~\cite{vaswani2017attention}.}
+    \caption[Arquitectura \textit{Transformer encoder--decoder} original]{%
+    Arquitectura \textit{Transformer encoder--decoder} original~\cite{vaswani2017attention}.}
     \label{figtransformer}
 \end{figure}
 
 Como se puede observar en la Figura~\ref{figtransformer}, el \textit{encoder} procesa la secuencia de entrada
 y produce una representación contextualizada de cada posición; el \textit{decoder} genera
-la secuencia de salida de forma autoregresiva, atendiendo tanto a su propia
+la secuencia de salida de forma autorregresiva, atendiendo tanto a su propia
 salida parcial como a la representación del \textit{encoder} mediante atención
 cruzada~\cite{vaswani2017attention}. Cada bloque del \textit{encoder} y del \textit{decoder}
-combina una subcapa de atención multi-cabeza con una \textit{Feed-Forward Network} (FFN). 
+combina una subcapa de atención multicabeza con una \textit{Feed-Forward Network} (FFN). 
 Ambas subcapas se integran mediante conexiones residuales y normalización de capa~\cite{murphy2022pml}.
 
 Dado que la autoatención es invariante al orden, se incorporan \textbf{codificaciones posicionales}
@@ -525,7 +527,7 @@ los problemas centrales de la recuperación de información musical
 procesamiento de señales, la teoría musical y el aprendizaje automático.
 
 Desde una perspectiva formal, AMT puede entenderse como un problema de
-\textit{transducción de secuencias}: dada una señal de audio discreta
+transducción de secuencias: dada una señal de audio discreta
 $\mathbf{x} \in \mathbb{R}^T$, el sistema debe producir una secuencia de
 eventos simbólicos que describan con precisión la música contenida en dicha
 señal. La dificultad intrínseca del problema reside en la naturaleza
@@ -539,7 +541,7 @@ tarea se descompone habitualmente en la estimación conjunta de cuatro atributos
 para cada nota: su tono (\textit{pitch}), su instante de inicio
 (\textit{onset}), su instante de finalización (\textit{offset}) y su
 dinámica o velocidad (\textit{velocity})~\cite{benetos2019amt}. La
-estimación precisa del offset es especialmente difícil en presencia del pedal
+estimación precisa del \textit{offset} es especialmente difícil en presencia del pedal
 de \textit{sustain}, cuyo efecto prolonga la resonancia del instrumento más allá del
 instante físico de liberación de la tecla.
 
@@ -553,7 +555,7 @@ En este contexto, el flujo de trabajo más extendido en la literatura consiste
 en dos etapas diferenciadas: en primer lugar, el sistema produce un
 \textbf{\textit{performance} MIDI}, es decir, una representación simbólica que captura
 con precisión los eventos de nota tal y como fueron interpretados; en segundo
-lugar, dicho performance MIDI se transforma en una \textbf{partitura}
+lugar, dicho \textit{performance} MIDI se transforma en una \textbf{partitura}
 (\textit{score}), que constituye la representación musical canónica legible por
 un músico. Esta separación permite especializar cada etapa de forma
 independiente.
@@ -578,11 +580,11 @@ rango de audición humana. Cada muestra se cuantiza mediante codificación PCM
 16 o 24 bits~\cite{oppenheim2010dsp}.
 
 Respecto al análisis de frecuencias, este se realiza mediante la
-transformada de Fourier. Sin embargo, las señales musicales son
+Transformada de Fourier. Sin embargo, las señales musicales son
 \textbf{no estacionarias}: su contenido frecuencial varía a lo largo del
 tiempo. La \textbf{Transformada de Fourier de Tiempo Corto} (\textit{Short-Time
 Fourier Transform}, STFT) resuelve este problema segmentando la señal en
-ventanas temporales cortas y aplicando la transformada de Fourier a cada una
+ventanas temporales cortas y aplicando la Transformada de Fourier a cada una
 de ellas~\cite{oppenheim2010dsp}:
 
 \begin{equation}
@@ -602,7 +604,7 @@ percepción auditiva humana ni con la estructura de la música tonal.
 
 Para alinear la representación frecuencial con la percepción auditiva, se
 aplica un banco de filtros triangulares distribuidos en escala
-\textbf{mel}~\cite{davis1980mel}. La escala mel es una escala perceptual en
+\textbf{Mel}~\cite{davis1980mel}. La escala Mel es una escala perceptual en
 la que distancias iguales corresponden a diferencias de tono percibidas como
 iguales por el oído humano. Cada filtro integra la energía del espectrograma
 en una banda de frecuencias, y el resultado se transforma a escala logarítmica,
@@ -613,7 +615,7 @@ produciendo el \textbf{espectrograma log-mel}:
     \label{eqlogmel}
 \end{equation}
 
-\noindent donde $H_b(k)$ es la respuesta del $b$-ésimo filtro mel. Esta
+\noindent donde $H_b(k)$ es la respuesta del $b$-ésimo filtro Mel. Esta
 representación compacta y perceptualmente motivada es ampliamente utilizada
 como entrada en sistemas de reconocimiento de voz, clasificación de música y
 transcripción automática~\cite{davis1980mel}.
@@ -645,7 +647,7 @@ para la transcripción de piano son:
     asociado al evento Note On que codifica la intensidad de pulsación de la
     tecla y determina la dinámica de la nota.
     \item \textbf{Mensajes de control (CC):} regulan parámetros continuos como
-    la posición de los pedales. El pedal de \textit (CC64), el pedal \textit{sostenuto}
+    la posición de los pedales. El pedal de \textit{sustain} (CC64), el pedal \textit{sostenuto}
     (CC66) y el pedal \textit{una corda} (CC67) son especialmente relevantes en la
     transcripción de piano, ya que modifican la duración sonora de las notas
     más allá del instante físico de liberación de la tecla.
@@ -661,7 +663,8 @@ ilustra un fragmento de \textit{performance} MIDI.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{figuras/performance_midi.png}
-    \caption{Fragmento de \textit{performance} MIDI.}
+    \caption[Fragmento de \textit{performance} MIDI]{%
+    Fragmento de \textit{performance} MIDI.}
     \label{figperformancemidi}
 \end{figure}
 
@@ -676,7 +679,8 @@ fragmento de la Figura~\ref{figperformancemidi}.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{figuras/piano_roll.png}
-    \caption{Fragmento de \textit{piano roll}.}
+    \caption[Fragmento de \textit{piano roll}]{%
+    Fragmento de \textit{piano roll}.}
     \label{figpianoroll}
 \end{figure}
 
@@ -702,24 +706,25 @@ visualiza a partir de un archivo MusicXML.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{figuras/partitura.png}
-    \caption{Fragmento en notación de partitura estándar (MusicXML).}
+    \caption[Fragmento en notación de partitura estándar (MusicXML)]{%
+    Fragmento en notación de partitura estándar (MusicXML).}
     \label{figpartitura}
 \end{figure}
 
 La diferencia fundamental entre \textit{performance} MIDI y partitura radica en el nivel
 de abstracción musical: el primero es una descripción física de la
-interpretación (tiempos exactos, velocidades continuas, pedal) mientras que
-la segunda es una descripción simbólica e intencional de la obra, 
+interpretación (tiempos exactos, valores de velocidad, pedal, etc.) mientras que
+la segunda es una descripción simbólica e intencional de la obra, incluyendo
 figuras, compases, voces, ornamentos, etc.
 
 
 
 \section{MIDI2ScoreTransformer}
 \label{sec:midi2scoretransformer}
-La herramienta \textit{midi2scoreTransformer}~\cite{beyer2024midi2score} realiza la conversión automática de archivos \emph{performance MIDI} a partituras legibles
+La herramienta MIDI2ScoreTransformer~\cite{beyer2024midi2score} realiza la conversión automática de archivos \emph{performance} MIDI a partituras legibles
 en formato MusicXML mediante un modelo \textit{transformer} \emph{encoder--decoder} especializado. Su objetivo es transformar una secuencia de
-notas cruda, descrita únicamente por altura, tiempos de inicio y fin y velocidad, en una notación musical compacta y clara, similar a
-la que produciría un copista humano. En el contexto de este TFG, \textit{midi2scoreTransformer} se emplea como etapa de postprocesado de
+notas cruda, descrita únicamente por altura, tiempos de inicio, fin y velocidad, en una notación musical compacta y clara, similar a
+la que produciría un copista humano. En el contexto de este TFG, MIDI2ScoreTransformer se emplea como etapa de postprocesado de
 los sistemas de transcripción automática de piano: a partir de las salidas en formato MIDI de interpretación, se generan partituras MusicXML
 que facilitan el análisis visual y la discusión de resultados por parte de lectores no especializados en MIR o procesamiento de audio.
 
@@ -734,27 +739,28 @@ con la longitud del compás anterior para reconstruir tiempos absolutos y barras
 conversión posterior a MusicXML~\cite{beyer2024midi2score}.
 
 En el núcleo de la herramienta se utiliza un modelo tipo RoFormer, es decir, un \textit{transformer} con codificaciones posicionales rotatorias
-(\emph{Rotary Positional Embeddings}), dispuesto en una arquitectura estándar \emph{encoder--decoder} autoregresiva. Los distintos flujos
+(\emph{Rotary Positional Embeddings}), dispuesto en una arquitectura estándar \emph{encoder--decoder} autorregresiva. Los distintos flujos
 de tokens de cada nota se embeben por separado y se suman en un espacio común de dimensión fija antes de alimentar las pilas de atención.
 La arquitectura integra técnicas como normalización de capa previa a la atención (\emph{pre-norm}) y funciones de activación de
 tipo SwiGLU en las capas de alimentación directa, lo que mejora la estabilidad del entrenamiento y la capacidad del modelo para capturar
 dependencias de largo alcance, cruciales para estimar el compás y mantener la coherencia de notación a lo largo de la pieza. El entrenamiento
 se plantea como una tarea de clasificación múltiple en cada paso temporal, con una función de pérdida basada en entropía cruzada sobre todos
 los atributos de salida y sobre un token especial de espaciado que permite alinear los flujos paralelos; para la generación se emplea
-decodificación autoregresiva \emph{greedy}~\cite{beyer2024midi2score}.
+decodificación autorregresiva \emph{greedy}~\cite{beyer2024midi2score}.
 
 El flujo de trabajo de inferencia puede resumirse en las siguientes etapas:
 \begin{enumerate}
-    \item Tokenización del archivo \emph{performance MIDI} procedente bien de una interpretación real, bien de un sistema de transcripción,
+    \item Tokenización del archivo \emph{performance MIDI} procedente de una interpretación real o de un sistema de transcripción,
     extrayendo los flujos de tokens de entrada descritos.
     \item Traducción de dichos tokens a los flujos de salida de MusicXML mediante el \textit{transformer} \emph{encoder--decoder}.
     \item Reconstrucción de la partitura en formato MusicXML, donde se derivan tiempos absolutos, compases y ligaduras, se insertan
     silencios en los huecos entre notas y se generan los elementos de notación final.
 \end{enumerate}
+
 El resultado es una partitura legible en cualquier editor estándar y adecuada para el análisis cualitativo y
 cuantitativo de las transcripciones generadas en este trabajo.
 
-Respecto a la implementación, el código original de \textit{midi2scoreTransformer}~\cite{beyer2024midi2score} se apoyaba en clases internas de versiones
+Respecto a la implementación, el código original de MIDI2ScoreTransformer~\cite{beyer2024midi2score} se apoyaba en clases internas de versiones
 anteriores de la biblioteca \texttt{transformers} de HuggingFace, lo que generaba incompatibilidades con versiones recientes. Para utilizar
 la herramienta en el entorno actual, se ha refactorizado el módulo RoFormer del proyecto sustituyendo la herencia de dichas clases internas
 por una jerarquía de módulos puros de PyTorch que replica la lógica del modelo original. Esta reestructuración mantiene intactos los nombres
@@ -777,9 +783,9 @@ para que los modelos sean capaces de generalizar. Hasta 2018, los \textit{datase
 (\foreign{english}{MIDI Aligned Piano Sounds}), no superaban las 70 horas de audio, 
 lo que suponía una barrera significativa para el entrenamiento de nuevos modelos~\cite{emiya2010maps}.
 
-En el ámbito de este trabajo, \textbf{Google Magenta} publicó el \textit{dataset} \textbf{MAESTRO}~\cite{hawthorne2019maestro} (\foreign{english}{Midi and Audio Edited for Synchronous Tracks and Organization}),
+En el ámbito de este trabajo, \textbf{Google Magenta} publicó el \textit{dataset} \textbf{MAESTRO}~\cite{hawthorne2019maestro} (\foreign{english}{MIDI and Audio Edited for Synchronous Tracks and Organization}),
 que supuso un cambio de paradigma al ofrecer casi 200 horas de grabaciones de piano de alta calidad con alineación precisa entre audio y etiquetas MIDI.
-La publicación de MAESTRO demostró inmediatamente su impacto: el modelo \textbf{Onsets and Frames}, entrenado sobre MAESTRO alcanzó un \textbf{F1 de 67,43\%}
+La publicación de MAESTRO demostró inmediatamente su impacto: el modelo \textbf{Onsets and Frames}, entrenado sobre MAESTRO alcanzó un \textbf{$F_1$ de 67,43\%}
 en la evaluación sobre grabaciones Disklavier del conjunto MAPS, superando notablemente el \textbf{50,22\%} obtenido por el mismo modelo 
 entrenado sobre MAPS únicamente~\cite{hawthorne2018onsetsframes,hawthorne2019maestro}. Desde entonces, MAESTRO se ha consolidado como el estándar de facto para la evaluación y comparación de sistemas de transcripción automática de piano.
 
@@ -829,7 +835,7 @@ del intérprete~\cite{yamaha_disklavier}.
   Sistema de sensores de un Yamaha Disklavier. En la parte superior se aprecia
   el teclado con sus teclas blancas y negras. En la franja central, bajo cada
   tecla, se dispone una fila de \textbf{sensores ópticos} cuyos emisores de luz
-  infrarroja (visibles como puntos rojos) detectan de forma continua y sin
+  infrarroja detectan de forma continua y sin
   contacto el desplazamiento del martillo y de la tecla a lo largo de su
   recorrido. A ambos lados se observan los mecanismos de acción con sus
   amortiguadores y pines de guía. Al no introducir ninguna fricción ni
@@ -844,17 +850,17 @@ del intérprete~\cite{yamaha_disklavier}.
 \end{figure}
 
 La alineación resultante entre la señal de audio y las etiquetas MIDI en MAESTRO es de aproximadamente $\pm 3~\mathrm{ms}$, muy inferior al umbral de percepción
-temporal humano (estimado en $20~\mathrm{ms}$), lo que hace que las etiquetas se consideren alineadas a nivel de fonación. Esta precisión es fundamental para entrenar 
+temporal humano (estimado en $20~\mathrm{ms}$), lo que hace que las etiquetas se consideren alineadas a nivel de evento. Esta precisión es fundamental para entrenar 
 modelos de transcripción: cualquier desalineación sistemática entre el \textit{onset} de una nota en el audio y su etiqueta MIDI correspondiente introduce ruido en los gradientes
 durante el entrenamiento y degrada el rendimiento de los modelos.
 
 \section{Adquisición y anotación}
 \label{sec:maestro_adquisicion}
 
-En primer lugar, el audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de bit de 16 bits 
-PCM\footnote{PCM (\foreign{english}{Pulse Code Modulation}) es una técnica de representación digital de señales analógicas basada en el muestreo y la cuantización, ampliamente utilizada en sistemas de audio sin compresión.} estéreo.
+En primer lugar, el audio se graba en calidad CD o superior, con una frecuencia de muestreo de $44{,}1$ a $48~\mathrm{kHz}$ y una profundidad de 16 bits 
+PCM estéreo.
 Esta calidad es suficiente para representar con fidelidad toda la gama de frecuencias audibles relevantes para el piano (entre $28~\mathrm{Hz}$ y $4~\mathrm{kHz}$ aproximadamente para los fundamentales,
-con armónicos que se extienden hasta 16-$20~\mathrm{kHz}$). Las grabaciones se almacenan sin compresión con pérdida, lo que preserva toda la información espectral original.
+con armónicos que se extienden hasta 16-$20~\mathrm{kHz}$). Las grabaciones se almacenan sin compresión, lo que preserva toda la información espectral original.
 
 
 De forma simultánea a la captura del audio, el sistema MIDI del Disklavier captura automáticamente los siguientes eventos para cada interpretación:
@@ -880,7 +886,7 @@ Estos metadatos permiten analizar el repertorio, controlar posibles solapamiento
 \section{Características del \textit{dataset}}
 \label{sec:maestro_caracteristicas}
 
-MAESTRO v3.0.0 está formado por un total de $1\,276$ grabaciones de interpretaciones de piano, que suman $198{,}7$ horas de audio y más de $7{,}4$ millones de eventos MIDI~\cite{magenta2020maestrov3}.
+MAESTRO v3.0.0 está formado por un total de $1\,276$ grabaciones de interpretaciones de piano, que suman $198{,}7$ horas de audio y más de $7$ millones de eventos MIDI~\cite{magenta2020maestrov3}.
 El repertorio incluye obras de 60 compositores distintos que se asocian principalmente a la música clásica occidental entre los siglos XVII y XX.
 % ============================================================
 % TABLA: Top 20 compositores en MAESTRO V3.0.0
@@ -945,8 +951,8 @@ En la Tabla~\ref{tab:maestro_stats} se detallan las estadísticas principales po
     Validation & $137$     & $19{,}4$  & $11{,}8$  & $0{,}64$ \\
     Test       & $177$     & $20{,}0$  & $12{,}1$  & $0{,}74$ \\
     \hline
-    \textbf{Total} & $\mathbf{1.276}$ & $\mathbf{198{,}7}$ &
-    $\mathbf{120{,}2}$ & $\mathbf{7{,}40}$ \\
+    \textbf{Total} & $\mathbf{1\,276}$ & $\mathbf{198{,}7}$ &
+    $\mathbf{120{,}2}$ & $\mathbf{7{,}04}$ \\
     \hline
   \end{tabular}
   
@@ -964,7 +970,7 @@ correctamente. De esta forma, los modelos se evalúan sobre obras no vistas en e
 
 \section{Evolución del \textit{dataset}}
 \label{sec:maestro_evolucion}
-MAESTRO ya va por su tercera versión desde su publicación original en 2018. En la Tabla~\ref{tab:maestro_versions} podemos ver características y principales cambios de cada versión.
+MAESTRO ya va por su tercera versión desde su publicación original en 2018. En la Tabla~\ref{tab:maestro_versions} podemos ver las características y los principales cambios de cada versión.
 % ============================================================
 % TABLA Evolución entre versiones
 % ============================================================
@@ -980,11 +986,11 @@ MAESTRO ya va por su tercera versión desde su publicación original en 2018. En
         \textbf{Versión} & \textbf{Año} & \textbf{Grabaciones} &
         \textbf{Horas} & \textbf{Notas (M)} & \textbf{Principal novedad} \\
         \hline
-        V1.0.0 & 2018 & $1.184$ & $172{,}3$ & $6{,}18$ &
+        V1.0.0 & 2018 & $1\,184$ & $172{,}3$ & $6{,}18$ &
           Publicación original~\cite{magenta2020maestrov3}; datos 2004--2016. \\
-        V2.0.0 & 2019 & $1.282$ & $201{,}2$ & $7{,}13$ &
+        V2.0.0 & 2019 & $1\,282$ & $201{,}2$ & $7{,}13$ &
           Añade edición 2018~\cite{magenta2020maestrov3}; incorpora pedales \textit{sostenuto} y \textit{una corda}. \\
-       V3.0.0 & 2020 & $1.276$ & $198{,}7$ & $7{,}04$ &
+       V3.0.0 & 2020 & $1\,276$ & $198{,}7$ & $7{,}04$ &
           Elimina 6 grabaciones con acompañamiento orquestal~\cite{magenta2020maestrov3}. \\
         \hline
       \end{tabular}
@@ -1001,9 +1007,9 @@ de este trabajo se realizan íntegramente sobre V3.0.0 para garantizar la compar
 \label{sec:maestro_distribucion}
 MAESTRO se distribuye a través de Google Magenta en tres modalidades de descarga~\cite{magenta2020maestrov3}:
 \begin{itemize}
-\item  \textbf{Audio + MIDI} ($120{,}2$ GB sin comprimir): contiene los archivos WAV y MIDI completos, junto con los metadatos en formato CSV y JSON.
-\item \textbf{Solo MIDI} ($\sim57~\mathrm{MB}$): para tareas que no necesiten el audio.
-\item \textbf{Comprimido con pérdida} (MP3/FLAC): versión reducida para almacenamiento limitado.
+\item  \textbf{Audio + MIDI}: contiene los archivos WAV y MIDI completos, junto con los metadatos en formato CSV y JSON.
+\item \textbf{Solo MIDI}: para tareas que no necesiten el audio.
+\item \textbf{Comprimido con pérdida}: versión reducida para almacenamiento limitado.
 \end{itemize}
 
 El \textit{dataset} se distribuye con licencia \foreign{english}{Creative Commons Attribution Non-Commercial Share Alike 4.0 International} (CC BY-NC-SA 4.0), que implica:
@@ -1020,7 +1026,7 @@ Esta licencia es compatible con el uso académico en el contexto de un Trabajo d
 
 A pesar de sus fortalezas, MAESTRO presenta una serie de limitaciones que debemos tener en cuenta al interpretar los resultados de los sistemas entrenados sobre él.
 
-\textbf{Sesgo de repertorio.} El repertorio es casi exclusivamente música clásica occidental de los siglos XVII-XX. Los modelos entrenados con MAESTRO no generalizan
+\textbf{Sesgo de repertorio.} El repertorio es casi exclusivamente música clásica occidental de los siglos XVII-XX. Los modelos entrenados con MAESTRO podrían no generalizar
 bien a géneros como el \textit{jazz}, el pop o la música contemporánea con técnicas extendidas. Esto se debe a que las distribuciones de patrones armónicos, rítmicos y de velocidad son muy diferentes a las de la música clásica.
 
 \textbf{Sesgo de instrumento.} Todas las grabaciones se realizaron sobre pianos Yamaha Disklavier del mismo modelo y en condiciones acústicas muy similares. Es por esto que los
@@ -1028,14 +1034,14 @@ modelos entrenados con MAESTRO muestran una degradación significativa de rendim
 Esto es especialmente relevante para aplicaciones del mundo real, donde el instrumento y la acústica son variables.
 
 \textbf{Ausencia de anotación de partitura.} MAESTRO proporciona MIDI, pero no partitura en formato estándar como MusicXML o MEI~\cite{magenta2020maestrov3}. Para tareas de transcripción audio-a-partitura
-(\foreign{english}{Audio-to-Score}), como parte del flujo de las tareas de AMT, es necesario complementar MAESTRO con \textit{datasets} que incluyan partituras anotadas, como ASAP (\foreign{english}{Aligned Scores and Performances}).
+(\foreign{english}{Audio-to-Score}), como parte del flujo de las tareas de AMT, es necesario complementar MAESTRO con \textit{datasets} que incluyan partituras anotadas, como ASAP (\foreign{english}{Aligned Scores and Performances})~\cite{foscarin2020asap}.
 
 \section{Relevancia para este trabajo}
 \label{sec:maestro_relevancia}
 MAESTRO v3.0.0 es el \textit{dataset} principal empleado para el entrenamiento y evaluación de los modelos de transcripción automática de piano desarrollados en este trabajo.
 
-Los modelos de referencia del estado del arte, incluyendo los modelos empleados en este trabajo, reportan sus resultados sobre las particiones fijas de MAESTRO, lo que
-hace directamente comparables los experimentos aquí presentados con los resultados publicados en la literatura.
+Los modelos de referencia del estado del arte reportan sus resultados sobre las particiones fijas de MAESTRO, lo que
+hace directamente comparables los experimentos presentados en este TFG con los resultados publicados en la literatura.
 
 Su volumen de casi 200 horas con más de \textbf{7 millones de eventos MIDI} proporciona datos suficientes para el entrenamiento de arquitecturas basadas en \foreign{english}{transformers}
 sin riesgo de sobreajuste, siempre y cuando se apliquen las técnicas de regularización adecuadas. Todos estos eventos tienen una precisión de alineación de $\pm 3~\mathrm{ms}$, garantizando la calidad de
@@ -1048,7 +1054,7 @@ Finalmente, las particiones fijas y predefinidas garantizan la reproducibilidad 
 La evaluación cuantitativa de los sistemas de transcripción automática de piano entrenados sobre MAESTRO sigue un protocolo consolidado en la comunidad, implementado mediante la librería \texttt{mir\_eval}~\cite{raffel2014mireval}. Este protocolo 
 es el empleado de forma invariante por todos los modelos del estado del arte que reportan resultados sobre este \textit{dataset}, incluyendo los modelos reproducidos en este trabajo, MFT-FiLM y Transkun. Es por esto que en esta sección veremos cómo se evalúan ambos modelos.
 
-Antes de aplicar las métricas, la salida de cada modelo, ya sea en forma de \textit{piano roll} (MFT-FiLM) o en forma de intervalos decodificados (Transkun) se convierte en un conjunto de eventos MIDI discretos de la forma $\{(\text{tono},\, t_{\text{onset}},\, t_{\text{offset}},\, v)\}$,
+Antes de aplicar las métricas, la salida de cada modelo, ya sea en forma de \textit{piano roll} (MFT-FiLM) o en forma de intervalos decodificados (Transkun), se convierte en un conjunto de eventos MIDI discretos de la forma $\{(\text{tono},\, t_{\text{onset}},\, t_{\text{offset}},\, v)\}$,
 donde el tono es un valor entero en $[21, 108]$ (las 88 teclas del piano estándar), los tiempos se expresan en segundos y la velocidad $v \in [0, 127]$ es un entero MIDI. La evaluación opera directamente sobre estos eventos discretos
 extraídos del MIDI de salida, comparándolos con los eventos del MIDI de \foreign{english}{ground truth}, sin acceder en ningún momento a la representación interna del modelo, de forma que se garantiza la independencia de las métricas respecto a la arquitectura empleada.
 
@@ -1105,7 +1111,8 @@ La Tabla~\ref{tab:metricas_resumen} resume las condiciones de aceptación de cad
 
 \begin{table}[h]
   \centering
-  \caption{Condiciones de aceptación de un evento predicho como verdadero positivo según
+  \caption[Condiciones de aceptación de un evento predicho como verdadero positivo según
+  la variante de métrica de nota empleada]{Condiciones de aceptación de un evento predicho como verdadero positivo según
   la variante de métrica de nota empleada.}
   \label{tab:metricas_resumen}
   \resizebox{\textwidth}{!}{
@@ -1137,8 +1144,8 @@ más representativa de la calidad de la transcripción completa.
 
 \section{Introducción}
 
-La transcripción de música de piano polifónico mediante redes neuronales se aborda principalmente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL)\cite{kong2021highres,hawthorne2018onsetsframes},
-en el que se estiman de forma conjunta el tono a nivel de \textit{frame}, los \textit{onsets}, \textit{offsets} y la velocidad de las notas. Esta formulación permite explotar la fuerte correlación entre estos eventos para mejorar la 
+La transcripción de música de piano polifónico mediante redes neuronales se aborda principalmente como un problema de detección multitarea (\foreign{english}{Multitask Learning}, o MTL),
+en el que se estiman de forma conjunta el tono a nivel de \textit{frame}, los \textit{onsets}, \textit{offsets} y la velocidad de las notas~\cite{kong2021highres,hawthorne2018onsetsframes}. Esta formulación permite explotar la fuerte correlación entre estos eventos para mejorar la 
 precisión global del sistema, pero también pone de manifiesto las limitaciones de las arquitecturas multitarea clásicas, que pueden sufrir transferencia negativa o una fusión ineficaz de la información cuando las tareas comparten parámetros 
 de manera demasiado rígida o combinan características sin un mecanismo de ponderación adecuado~\cite{wang2025mftfilm}.
 
@@ -1150,7 +1157,7 @@ obteniendo un modelo con un número de parámetros reducido que mantiene un rend
 representaciones adaptadas a la percepción musical.
 
 En este capítulo, la Sección~\ref{sec:cqt} introduce la representación tiempo--frecuencia empleada, basada en la Transformada Q Constante (CQT).
-A continuación, la Sección~\ref{sec:mft_arch} describe la arquitectura general del sistema y detalla los módulos FiLM, FT-FiLM e IFT-FiLM.
+A continuación, la Sección~\ref{sec:mft_arch} describe la arquitectura general del sistema y la Sección~\ref{sec:ftfilm_iftfilm} detalla los módulos FiLM, FT-FiLM e IFT-FiLM.
 La Sección~\ref{sec:mft_loss_eff} presenta la función de pérdida conjunta y analiza la eficiencia computacional del modelo.
 La Sección~\ref{sec:mft_exp_resultados} recoge el preprocesamiento de los datos, el procedimiento de entrenamiento y los resultados alcanzados.
 Finalmente, la Sección~\ref{sec:mft_conclusiones} sintetiza brevemente el trabajo realizado en este capítulo y destaca los principales resultados obtenidos.
@@ -1374,7 +1381,7 @@ El módulo \textbf{FT-FiLM} (\foreign{english}{Frequency-Time FiLM}) adapta el
 mecanismo de la ecuación~(\ref{eq:film}) para extraer dependencias espectrales y 
 temporales de forma jerárquica a partir del espectrograma CQT. Es el tipo de bloque 
 empleado en la rama \foreign{english}{onset}, que opera exclusivamente sobre su propia 
-representación interna (auto-condicionamiento). Su operación se define como:
+representación interna (autocondicionamiento). Su operación se define como:
 
 \begin{equation}
   \text{FT-FiLM}(x) = f_{FT}(x) \odot x + h_{FT}(x)
@@ -1382,7 +1389,7 @@ representación interna (auto-condicionamiento). Su operación se define como:
 \end{equation}
 
 \noindent donde $f_{FT}$ y $h_{FT}$ son los generadores de los parámetros de 
-modulación $\gamma$ y $\beta$ respectivamente. Como se puede seguir en la 
+modulación $\gamma$ y $\beta$, respectivamente. Como se puede seguir en la 
 Figura~\ref{fig:film_detail}, el generador opera en tres etapas secuenciales 
 sobre el mapa de entrada de dimensiones $(C, T, F)$. En primer lugar, el mapa de 
 características se convoluciona con un kernel 1D de tamaño $2F - 1 = 175$ sobre 
@@ -1410,7 +1417,7 @@ transformación afín de la ecuación~(\ref{eq:ftfilm}), con una capa de
 \foreign{english}{dropout} de tasa $0{,}1$ antes de la modulación final 
 (visible en la Figura~\ref{fig:film_detail} como la conexión de salto que llega 
 a los operadores $\odot$ y $+$). El resultado es una representación 
-auto-condicionada que integra información espectral y temporal de forma jerárquica 
+autocondicionada que integra información espectral y temporal de forma jerárquica 
 y separada, lo que permite mantener un número de parámetros reducido. El generador 
 FiLM gestiona la información en tres dimensiones individuales (frecuencia, canal 
 y tiempo) de forma desacoplada, en lugar de operarlas conjuntamente como haría un 
@@ -1625,14 +1632,14 @@ Estas diferencias de unas pocas décimas respecto a los resultados publicados pu
 \end{table}
 
 Las Tablas~\ref{tab:mft_maestro_prec} y~\ref{tab:mft_maestro_rec} descomponen el $F_1$ en términos de precisión y \textit{recall}.
-En la reproducción se observa una precisión especialmente alta en la detección de inicios de nota, cercana al 99\,\%, apenas introduce notas espurias que no existen en la partitura de referencia.
-El \textit{recall} en onsets se sitúa ligeramente por debajo, en torno al 97\,\%, lo que sugiere que los pocos errores restantes se deben principalmente a notas omitidas en pasajes complejos más que a activaciones falsas.
+En la reproducción se observa una precisión especialmente alta en la detección de inicios de nota, cercana al 99\,\% (apenas introduce notas espurias).
+El \textit{recall} en \textit{onsets} se sitúa ligeramente por debajo, en torno al 97\,\%, lo que sugiere que los pocos errores restantes se deben principalmente a notas omitidas en pasajes complejos más que a activaciones falsas.
 
 En las métricas que incluyen el \textit{offset} y la velocidad, tanto la precisión como el \textit{recall} descienden de forma moderada pero se mantienen en torno al 90\,\%, en línea con los resultados de MFT-FiLM reportados por Wang \textit{et al.}~\cite{wang2025mftfilm} y con los mejores modelos del estado del arte.
 Esto refleja la mayor dificultad de estimar con precisión el final de las notas y su dinámica en presencia del pedal de \textit{sustain}, pero confirma que la arquitectura MFT-FiLM es capaz de modelar de forma consistente la articulación temporal y la intensidad de la interpretación, incluso cuando el entrenamiento se detiene a mitad de las épocas previstas.
 
 Finalmente, la comparación horizontal de las tres tablas evidencia que, con solo $1{,}2$ millones de parámetros, la variante reproducida de MFT-FiLM ofrece un rendimiento muy cercano al de modelos considerablemente más pesados, como hFT-Transformer o las variantes SemiCRF.
-Desde la perspectiva de la relación entre eficiencia y precisión, este comportamiento respalda la tesis de los autores de que la modulación lineal frecuencia–tiempo permite explotar de forma eficaz la información compartida entre tareas sin necesidad de incrementar el tamaño del modelo.
+Desde la perspectiva de la relación entre eficiencia y precisión, este comportamiento respalda la tesis de los autores de que la modulación lineal frecuencia--tiempo permite explotar de forma eficaz la información compartida entre tareas sin necesidad de incrementar el tamaño del modelo.
 
 
 De forma complementaria a la evaluación del rendimiento final sobre el conjunto 
@@ -1723,7 +1730,7 @@ el conjunto de validación para las cuatro subtareas evaluadas.
 En la Figura~\ref{fig:f1_evolution} se observa una estructura jerárquica de aprendizaje bien definida: la detección de 
 \textit{Note Onset} alcanza valores de convergencia superiores al $97\%$ de 
 forma muy temprana (época 5). En contraste, la estimación de la velocidad 
-(\textit{Velocity}), al constituir un problema de regresión dependiente de la 
+(\textit{Velocity}), al constituir un problema dependiente de la 
 intensidad dinámica de la pulsación, requiere un proceso de optimización más 
 prolongado, evolucionando desde un $72{,}22\%$ inicial hasta consolidarse 
 por encima del $85\%$ hacia la culminación del entrenamiento. Esta diferencia de ritmos de convergencia es 
@@ -1771,7 +1778,7 @@ específico de la Transcripción Automática de Música (AMT), esto se traduce e
 que, ante la predicción de activación de una nota, existe una elevada 
 probabilidad de que dicha nota esté efectivamente presente en la interpretación 
 original. En consecuencia, los errores residuales del sistema provienen 
-mayoritariamente de la omisión de notas (\textit{missed notes}), fenómeno 
+mayoritariamente de la omisión de notas, fenómeno 
 particularmente predecible en segmentos de alta densidad polifónica o ante 
 pulsaciones de baja amplitud acústica enmascaradas por el uso del pedal de 
 \textit{sustain}.
@@ -1888,9 +1895,9 @@ que servirá de referencia para las explicaciones sobre este modelo.
   se retienen y se remuestrean temporalmente mediante \texttt{ConvTranspose1d}
   hasta la resolución original $T$. Los \textit{embeddings} $\mathbf{h}_i \in
   \mathbb{R}^{128}$ resultantes se usan en dos ramas paralelas: el módulo de
-  \foreign{english}{scoring} por producto interior escalado (que alimenta la capa
-  \textit{semi-CRF} para producir los intervalos no solapados) y el Attribute MLP (que
-  predice velocidad, posiciones subframe e indicadores de segmento).}
+  \foreign{english}{scoring} por producto interior escalado, que alimenta la capa
+  \textit{semi-CRF} para producir los intervalos no solapados; y el \textit{Attribute} MLP, que
+  predice velocidad, posiciones \textit{subframe} e indicadores de segmento.}
   \label{fig:transkun_overview}
 \end{figure}
 
@@ -1919,14 +1926,14 @@ Las siguientes secciones desarrollan estas etapas en detalle.
 
 Esta sección describe las tres primeras etapas del sistema, visibles en la mitad
 inferior de la Figura~\ref{fig:transkun_overview}: el cálculo del espectrograma
-de entrada, el submuestreo convolucional con adición de embeddings de posición
+de entrada, el submuestreo convolucional con adición de \textit{embeddings} de posición
 espacial, y la inicialización de los \foreign{english}{event tracks}.
 
 La señal de audio de entrada se muestrea a $44\,100~\mathrm{Hz}$ y se transforma
 mediante la Transformada de Fourier de Tiempo Corto (STFT) con ventana de \textit{Hanning},
 tamaño de ventana de 4096 muestras y un salto de trama
 (\foreign{english}{hop size}) de 1024 muestras ($\approx 23{,}2~\mathrm{ms}$ por
-trama). Se utilizan 229 bandas mel en el rango de 30 a
+trama). Se utilizan 229 bandas Mel en el rango de 30 a
 $8000~\mathrm{Hz}$~\cite{yan2024transkun}. Aunque la etapa de preprocesamiento sigue una estructura análoga a la de MFT-FiLM (véase la
 Sección~\ref{sec:mft_arch}), Transkun no emplea la CQT sino el espectrograma
 log-mel, ya que opera a $44\,100~\mathrm{Hz}$ y su \textit{backbone transformer} no
@@ -1936,7 +1943,7 @@ Para mejorar la resolución temporal de la representación espectral sin reducir
 salto de trama, se aplica una estrategia de \textbf{sobremuestreo de ventanas}
 (\foreign{english}{multi-window oversampling}) heredada del \textit{semi-CRF}
 original~\cite{yan2021semicrf1}: en lugar de una única ventana de \textit{Hanning} por
-trama, se aplican \textbf{cinco subventanas de Hanning ajustables} (inicializadas con centros 
+trama, se aplican \textbf{cinco subventanas de \textit{Hanning} ajustables} (inicializadas con centros 
 equidistantes y varianza constante) sobre cada trama
 de audio, y sus espectros log-mel resultantes se concatenan a lo largo del eje de
 canales. El resultado es una entrada de cinco canales espectrales por \textit{bin}
@@ -1951,7 +1958,7 @@ Onsets\,\&\,Frames~\cite{hawthorne2018onsetsframes}), que preservan la
 resolución temporal completa de la entrada a lo largo de toda la red, Transkun
 adopta un diseño de \textbf{mapa de características de baja resolución}, análogo
 al empleado en los \textit{Vision Transformers} (ViT)~\cite{dosovitskiy2021vit}. Esta
-elección de diseño se justifica en que la alta dimensionalidad de los embeddings
+elección de diseño se justifica en que la alta dimensionalidad de los \textit{embeddings}
 permite mantener suficiente capacidad expresiva incluso con resolución temporal
 reducida, al tiempo que el coste computacional del \textit{transformer} se reduce de forma
 drástica~\cite{yan2024transkun,li2022videt}.
@@ -1992,14 +1999,14 @@ $\boldsymbol{y} \in \mathbb{R}^E$ de acuerdo con:
 aprendible inicializada desde $\mathcal{N}(0,\,\gamma^{-2})$;
 $\boldsymbol{b} \in \mathbb{R}^B$ es un sesgo aprendible inicializado desde
 $\mathcal{U}(-\pi,\,+\pi)$; $B$ es la dimensión de las características de Fourier
-($|B| = 256$); $\gamma$ es un hiperparámetro de escala ($\gamma = 1$); y
+($B = 256$); $\gamma$ es un hiperparámetro de escala ($\gamma = 1$); y
 $g : \mathbb{R}^B \to \mathbb{R}^E$ es un perceptrón de dos capas con tamaño
 oculto 1024~\cite{yan2024transkun}. Este \textit{embedding} funciona como una red MLP que
 toma coordenadas espaciales como entrada, con la primera no linealidad siendo una
 función coseno escalada. Se elige por su sencillez y amplia compatibilidad con
 arquitecturas \textit{transformer}.
 
-El embedding se aplica de forma \textbf{independiente} a las representaciones del
+El \textit{embedding} se aplica de forma \textbf{independiente} a las representaciones del
 espectrograma submuestreado (con coordenadas $(\textit{frameIdx},\,
 \textit{freqIdx})$) y a los \foreign{english}{event tracks} (con coordenadas
 $(\textit{frameIdx},\, \textit{eventTypeIdx})$). En ambos casos la operación es
@@ -2019,7 +2026,7 @@ añaden a las representaciones de imagen para que el \textit{transformer} los es
 en tareas de predicción densa.
 
 Los \foreign{english}{event tracks} se inicializan sumándoles sus propios
-embeddings de posición espacial (Ecuación~\ref{eq:fourier_pos} con coordenadas
+\textit{embeddings} de posición espacial (Ecuación~\ref{eq:fourier_pos} con coordenadas
 $(\textit{frameIdx},\, \textit{eventTypeIdx})$) y se \textbf{concatenan} al
 espectrograma submuestreado enriquecido a lo largo de la dimensión de
 secuencia~\cite{yan2024transkun}. El tensor resultante, de dimensiones
@@ -2027,27 +2034,26 @@ $T' \times (F' + N_{\text{events}}) \times 256$, constituye la entrada al
 \textit{transformer encoder}. Esta concatenación, indicada como \texttt{[concat]} en la
 Figura~\ref{fig:transkun_overview}, permite que el \textit{transformer} intercambie
 información entre las representaciones tiempo-frecuencia del audio y los
-\foreign{english}{event tracks} a través del mecanismo de auto-atención, de
+\foreign{english}{event tracks} a través del mecanismo de autoatención, de
 forma completamente aprendible.
 
 %==============================================================================
 
-\section{Transformer encoder no jerárquico}
+\section{\textit{Transformer encoder} no jerárquico}
 \label{sec:transkun_encoder}
 
 El \textit{transformer} \textit{encoder} es el componente central del sistema. Se trata de un
 \textbf{\textit{encoder} no jerárquico} (sin submuestreo adicional ni estructura
 piramidal) compuesto por $L = 6$ capas, cuya elección como \foreign{english}{backbone} responde 
-a la coherencia entre su mecanismo de auto-atención y el módulo de \foreign{english}{scoring} por producto 
+a la coherencia entre su mecanismo de autoatención y el módulo de \foreign{english}{scoring} por producto 
 interior que constituye la salida del sistema.
 
 
-Cada una de las $L = 6$ capas del \textit{encoder} contiene \textbf{dos bloques
-\textit{transformer} en cascada}: uno que atiende a lo largo del \textbf{eje temporal}
+Cada una de las $L = 6$ capas del \textit{encoder} contiene dos bloques
+\textit{transformer} en cascada: uno que atiende a lo largo del \textbf{eje temporal}
 y otro a lo largo del \textbf{eje de frecuencia o tipo de evento}, alternando en
 cada capa~\cite{yan2024transkun}. Este esquema de \textbf{atención axial
-separable} reduce la complejidad computacional de $O(T^2 (F' + N_{\text{events}})^2)$
-a $O(T'^2 + (F' + N_{\text{events}})^2)$ por capa, y es análogo al empleado en
+separable} reduce la complejidad computacional por capa, y es análogo al empleado en
 otras arquitecturas \textit{transformer} eficientes para datos
 multidimensionales~\cite{ho2019axial,ristea2022septr}. La organización de los
 bloques dentro de cada capa se ilustra en la
@@ -2070,7 +2076,7 @@ Figura~\ref{fig:transkun_encoder}.
   \end{subfigure}
   \caption[Bloques constitutivos del \textit{transformer} \textit{encoder} de Transkun]%
   {Bloques constitutivos del \textit{transformer} \textit{encoder}. \textbf{(a)} Bloque \textit{transformer}
-  básico (\texttt{TransformerBlock}): aplica RMSNorm antes de la auto-atención y
+  básico (\texttt{TransformerBlock}): aplica RMSNorm antes de la autoatención y
   de la FFN, y escala la salida de cada subcapa mediante el factor aprendible
   $\lambda$ (ReZero) antes de sumarlo al residual. \textbf{(b)} Organización de
   los bloques dentro de cada capa del \textit{encoder}: un \texttt{TransformerBlock} atiende
@@ -2085,7 +2091,7 @@ Cada bloque \textit{transformer}, ilustrado en la
 Figura~\ref{fig:transkun_encoder}, sigue el diseño estándar de
 \foreign{english}{pre-normalización}: la entrada $\boldsymbol{h}$ se normaliza
 primero con \textbf{RMSNorm}~\cite{zhang2019rmsnorm}, después se aplica la capa
-de auto-atención multi-cabeza (\textit{Self-Attn}) o la red neuronal de avance
+de autoatención multicabeza (\textit{Self-Attn}) o la red neuronal de avance
 (FFN, con tamaño de proyección interna 1024), y finalmente la salida de la
 subcapa se suma a la conexión residual. Para mejorar la estabilidad del
 entrenamiento de modelos profundos, se emplea
@@ -2109,7 +2115,7 @@ inicialización. Este mecanismo garantiza que, al inicio del entrenamiento, la
 salida de cada bloque sea casi idéntica a su entrada ($\boldsymbol{h}' \approx
 \boldsymbol{h}$), lo que facilita el flujo del gradiente a través de las 12
 subcapas del \textit{encoder} (2 subcapas $\times$ 6 capas) y acelera la convergencia.
-El \textit{encoder} utiliza \textbf{8 cabezas de atención} y una dimensión de embedding
+El \textit{encoder} utiliza \textbf{8 cabezas de atención} y una dimensión de \textit{embedding}
 de $256$~\cite{yan2024transkun}.
 
 
@@ -2128,14 +2134,14 @@ $T' = T/8$, y se pasan a la etapa de remuestreo.
 
 %==============================================================================
 
-\section{Scoring por producto interior y semi-CRF}
+\section{\textit{Scoring} por producto interior y \textit{semi-CRF}}
 \label{sec:transkun_scoring}
 
 Tras el \textit{encoder}, los \foreign{english}{event tracks} se remuestrean temporalmente
 y se emplean para calcular la matriz de \foreign{english}{scoring} que alimenta la
 capa \textit{semi-CRF}. Esta sección describe estas dos últimas etapas del sistema: el
 remuestreo temporal y el módulo de \foreign{english}{scoring} por producto interior
-escalado, el marco \textit{semi-CRF} y su justificación teórica.
+escalado, y el marco \textit{semi-CRF}.
 
 
 Dado que los \foreign{english}{event tracks} operan en la resolución temporal
@@ -2269,79 +2275,6 @@ gradientes (análogo al escalado del mecanismo de atención) con un factor
 proporcional a la longitud del intervalo $|j-i|$, que refleja que los intervalos
 más largos acumulan más evidencia acústica~\cite{yan2024transkun}.
 
-\subsection*{Justificación teórica de la expresividad}
-
-Una pregunta natural es si la simplicidad del producto interior implica una
-pérdida de capacidad expresiva respecto al MLP original. Yan y Duan responden a
-esta pregunta formalmente a través del siguiente resultado~\cite{yan2024transkun}.
-
-Se define una \textbf{matriz de \foreign{english}{scoring} ideal}
-$\boldsymbol{S}_\mathcal{Y} \in \mathbb{R}^{T \times T}$ para un conjunto de
-intervalos $\mathcal{Y}$ como aquella en que:
-
-\[
-  \boldsymbol{S}_\mathcal{Y}(i,j) > 0 \quad \forall\,[i,j] \in \mathcal{Y},
-  \qquad
-  \boldsymbol{S}_\mathcal{Y}(i,j) = -\epsilon \quad \text{en caso contrario}
-\]
-
-\noindent con $\epsilon > 0$. Con esta matriz la decodificación MAP produce
-necesariamente $\mathcal{Y}$, ya que excluir cualquier intervalo activo o incluir
-cualquier intervalo inactivo reduciría la puntuación total.
-
-\begin{lemma*}[Yan y Duan, 2024]
-El rango de una matriz de \foreign{english}{scoring} ideal
-$\boldsymbol{S}_\mathcal{Y}$ para un conjunto de intervalos no solapados
-$\mathcal{Y}$ es $M + 1$, donde $M = |\mathcal{Y}|$ es el número de intervalos
-activos.
-\end{lemma*}
-
-\begin{theorem*}[Yan y Duan, 2024]
-Sea $\mathcal{Y}$ un conjunto de $M$ intervalos no solapados sobre $T$ pasos.
-Una matriz de \foreign{english}{scoring} ideal $\boldsymbol{S}_\mathcal{Y}$ puede
-representarse como el producto interior por pares entre dos secuencias 1D
-$(\boldsymbol{k}_i)_i$ y $(\boldsymbol{q}_i)_i$ de vectores:
-\[
-  \boldsymbol{S}_\mathcal{Y}(i,j) = \langle \boldsymbol{q}_i,\,
-  \boldsymbol{k}_j \rangle
-\]
-con $\mathrm{rank}(\boldsymbol{Q}_\mathcal{Y}) > M$ y
-$\mathrm{rank}(\boldsymbol{K}_\mathcal{Y}) > M$, donde
-$\boldsymbol{Q}_\mathcal{Y} = [\boldsymbol{q}_0, \ldots, \boldsymbol{q}_{T-1}]$
-y $\boldsymbol{K}_\mathcal{Y} = [\boldsymbol{k}_0, \ldots, \boldsymbol{k}_{T-1}]$.
-\end{theorem*}
-
-Este resultado tiene dos implicaciones prácticas directas~\cite{yan2024transkun}.
-En primer lugar, la dimensión $D$ de los vectores $\boldsymbol{q}_i$ y
-$\boldsymbol{k}_i$ debe superar el número total de intervalos activos
-$|\mathcal{Y}|$. En segundo lugar, dado que los vectores se obtienen aplicando el
-remuestreo lineal $u_c$ de la capa \texttt{ConvTranspose1d} sobre la secuencia de
-baja resolución, la dimensión requerida en el espacio de baja resolución satisface
-$D' > c \cdot |\mathcal{Y}|$ con $c = 8$. Con $D' = 256$, esto garantiza que el
-diseño de baja resolución temporal no implica ninguna pérdida de expresividad.
-
-
-La relación entre la Ecuación~\ref{eq:scoring_ip} y el mecanismo de atención por
-producto interior escalado de los \textit{transformers}~\cite{vaswani2017attention} es
-clara: ambos computan una puntuación escalar para cada par de posiciones
-$(i, j)$ mediante el producto interior entre un vector de consulta
-$\boldsymbol{q}_i$ y un vector de clave $\boldsymbol{k}_j$, escalado por
-$1/\sqrt{D}$. La diferencia estructural fundamental reside en la
-\textbf{normalización}: la atención normaliza por posición mediante
-\textit{softmax}, produciendo una distribución de probabilidad local por fila,
-mientras que el \textit{semi-CRF} normaliza de forma \textbf{global} sobre todos los
-posibles conjuntos de intervalos no solapados $\mathcal{Y}'$, garantizando que la
-decodificación sea globalmente óptima en lugar de localmente
-\textit{greedy}~\cite{yan2024transkun}.
-
-Esta analogía no es solamente formal: motiva la elección del \textit{transformer} como
-\foreign{english}{backbone}, ya que puede interpretarse como una arquitectura que
-refina iterativamente las representaciones para que sean adecuadas para el
-\foreign{english}{scoring} por producto interior. El estudio de ablación del
-artículo original confirma que una capa lineal para el cálculo de
-$\boldsymbol{q}$, $\boldsymbol{k}$ y $b$ (Ecuación~\ref{eq:kqb}) supera a un
-MLP, alineándose con cómo se calculan las consultas y claves en los \textit{transformers}
-estándar~\cite{yan2024transkun}.
 
 %==============================================================================
 
@@ -2351,11 +2284,11 @@ estándar~\cite{yan2024transkun}.
 La capa \textit{semi-CRF} produce, tras la decodificación MAP, un conjunto de intervalos
 $[i, j]$ para cada tipo de evento con precisión de trama. Sin embargo, la
 representación MIDI final requiere información adicional: la \textbf{velocidad}
-de cada nota, las \textbf{posiciones subframe} de inicio y fin para obtener
+de cada nota, las \textbf{posiciones \textit{subframe}} de inicio y fin para obtener
 los instantes exactos de \textit{onset} y \textit{offset}, y un par de \textbf{indicadores binarios}
 para gestionar correctamente los eventos que cruzan los límites entre segmentos
 de audio consecutivos. Estos atributos se predicen, en paralelo con la
-decodificación \textit{semi-CRF}, mediante el Attribute MLP visible en la rama derecha de
+decodificación \textit{semi-CRF}, mediante el \textit{Attribute} MLP visible en la rama derecha de
 la Figura~\ref{fig:transkun_overview}.
 
 
@@ -2576,7 +2509,7 @@ gráficas separadas, Figuras~\ref{fig:transkuntrainerrvel} y~\ref{fig:transkuntr
 
 El análisis conjunto de ambas figuras revela comportamientos cualitativamente distintos para cada uno de
 los dos atributos. El MSE de velocidad (Figura~\ref{fig:transkuntrainerrvel}) presenta la caída más pronunciada del
-entrenamiento, con una reducción superior al 90\,\% en las primeras épocas que evidencia que el \textit{Attribute MLP}
+entrenamiento, con una reducción superior al 90\,\% en las primeras épocas que evidencia que el \textit{Attribute} MLP
 adquiere rápidamente la capacidad de estimar el orden de magnitud de la dinámica de cada nota. Esto se explica por la
 naturaleza del regresor: la red aprende a evitar predicciones de velocidad extremas o uniformes y converge rápidamente hacia
 la media estadística del dataset. A partir de entonces, la curva se estabiliza en una banda estrecha sin tendencia decreciente
@@ -2623,7 +2556,7 @@ producirían mejoras significativas. La elección del \textit{checkpoint} final 
 plenamente justificada: la curva de validación no muestra ningún indicio de degradación que aconseje una parada anticipada.
 
 A continuación se analizan los resultados finales obtenidos por el modelo.
-Las Tablas~\ref{tab:transkun_maestro_v3}, \ref{tab:transkun_maestro_prec} 
+Las Tablas~\ref{tab:transkun_maestro_v3},~\ref{tab:transkun_maestro_prec} 
 y~\ref{tab:transkun_maestro_rec} recogen los resultados de evaluación del modelo 
 Transkun entrenado en este trabajo sobre el conjunto de \textit{test} de MAESTRO 
 v3.0.0, junto con los valores reportados por los autores del artículo 
@@ -2687,16 +2620,15 @@ MFT-FiLM alcanza $98{,}17\%$ frente a $98{,}03\%$ de Transkun, una diferencia
 de tan solo $0{,}14$ puntos porcentuales que puede considerarse marginal. En el 
 resto de métricas, Transkun supera a MFT-FiLM en $0{,}33$ puntos en \textit{Frame}, 
 en $0{,}46$ puntos en \textit{Note w/ Off.} y en $0{,}74$ puntos en 
-\textit{Note w/ Off. \& Vel.}. Siendo esta última la métrica más representativa 
+\textit{Note w/ Off. \& Vel}. Siendo esta última la métrica más representativa 
 de la calidad de una transcripción completa (debido a que incorpora la evaluación 
-conjunta del tono, el inicio, la duración y la dinámica de cada nota) puede 
+conjunta del tono, el inicio, la duración y la dinámica de cada nota), puede 
 concluirse que Transkun ofrece en términos generales una transcripción de mayor 
-calidad que MFT-FiLM. Esta ventaja se obtiene, sin embargo, a costa de un coste computacional 
-considerablemente mayor: con $12{,}9\,\text{M}$ de parámetros frente a los 
+calidad que MFT-FiLM. Esta ventaja se obtiene, sin embargo, a costa de un mayor coste computacional: con $12{,}9\,\text{M}$ de parámetros frente a los 
 $1{,}2\,\text{M}$ del MFT-FiLM, el entrenamiento de Transkun fue notablemente 
-más extenso en duración y en recursos, consecuencia directa de la mayor 
+más demandante en duración y en recursos, consecuencia directa de la mayor 
 complejidad de su arquitectura \textit{transformer} y del esquema de 
-decodificación secuencia a secuencia que emplea.
+decodificación que emplea.
 
 \begin{table}[H]
   \centering
@@ -2815,9 +2747,9 @@ En comparación con el modelo MFT-FiLM reproducido en el capítulo anterior,
 Transkun obtiene resultados superiores en la mayoría de las métricas, 
 siendo la única excepción las  métricas de \textit{Note On.}, donde la diferencia es 
 marginal. Atendiendo a la métrica más representativa de la calidad de una 
-transcripción completa ()\textit{Note w/ Off. \& Vel.} $F_1$) Transkun 
+transcripción completa (\textit{Note w/ Off. \& Vel.} $F_1$), Transkun 
 ($91{,}52\%$) supera a MFT-FiLM ($90{,}78\%$), si bien esta ventaja se 
-obtiene por un número de parámetros aproximadamente 10 veces superior y de un 
+obtiene con un número de parámetros aproximadamente 10 veces superior y con un 
 entrenamiento notablemente más costoso en tiempo y recursos computacionales.
 
 Finalmente, ambos modelos (Transkun y MFT-FiLM) se posicionan por 
@@ -2825,12 +2757,12 @@ encima de todos los modelos de referencia incluidos en la comparativa en las
 métricas más exigentes, superando a Transformer~\cite{hawthorne2021seq2seq}, 
 SemiCRF~\cite{yan2021semicrf1}, HPPNet~\cite{wei2022hppnet}, 
 hFT-Transformer~\cite{toyama2023hftt} y HATANet~\cite{wang2024hatanet} en 
-\textit{Note w/ Off.} y \textit{Note w/ Off. \& Vel.}. Esto confirma que ambos 
+\textit{Note w/ Off.} y \textit{Note w/ Off. \& Vel.} Esto confirma que ambos 
 modelos, evaluados sobre repertorio de música clásica occidental, 
 representan fielmente el estado del arte en transcripción automática de piano.
 
 
-\chapter{Evaluación fuera del clasicismo: \textit{jazz}}
+\chapter{Evaluación fuera del repertorio clásico: \textit{jazz}}
 \label{chap:comparacion_jazz}
 
 \section{Introducción}
@@ -3075,7 +3007,7 @@ el problema de generalización estilística con el problema de separación instr
 En este contexto, PiJAMA representa el compromiso más adecuado para el objetivo del
 experimento. Proporciona una colección extensa
 de piano \textit{jazz} solo, con más de 200 horas de grabaciones reales y una representación
-MIDI que permite calcular métricas de transcripción nota a nota~\cite{edwards2023pijama}.
+MIDI que permite calcular métricas de transcripción a nivel de nota~\cite{edwards2023pijama}.
 
 
 Desde el punto de vista musical, el piano \textit{jazz} introduce una serie de rasgos que lo
@@ -3276,7 +3208,7 @@ sobre MAESTRO.
 
 \begin{table}[H]
   \centering
-  \caption[Resultados comparativos de MFT-FiLM y Transkun en MAESTRO y PiJAMA]{%
+  \caption[Resultados de MFT-FiLM y Transkun en MAESTRO y PiJAMA]{%
   Resultados comparativos de MFT-FiLM y Transkun sobre MAESTRO y PiJAMA.
   Se muestran la precisión (\textit{P}), el \textit{recall} (\textit{R}) y el $F_1$
   para las principales métricas de transcripción automática de piano. Todas las métricas
@@ -3292,10 +3224,10 @@ sobre MAESTRO.
     \multicolumn{3}{c}{\textbf{Note w/ Off. \& Vel.}} \\
     \cline{2-13}
     &
-    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
-    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
-    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} &
-    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{F1(\%)} \\
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{$F_1$(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{$F_1$(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{$F_1$(\%)} &
+    \textbf{P(\%)} & \textbf{R(\%)} & \textbf{$F_1$(\%)} \\
     \hline
 
     &
@@ -3429,7 +3361,7 @@ en la Figura~\ref{fig:midis_originales}.
 Como se puede observar en la Figura~\ref{fig:midis_originales}, la representación resulta bastante ilegible y de difícil interpretación,
 particularmente en el caso del modelo MFT-FiLM. Con el fin de obtener una visualización más comprensible, la salida de los modelos se
 procesa mediante la herramienta MIDI2ScoreTransformer, presentada y adaptada en la Sección~\ref{sec:midi2scoretransformer}. De este modo,
-se genera un archivo MIDI cuya transcripción se aproxima en mayor medida a una partitura real y legible, tal y como se muestra en
+se genera un archivo cuya transcripción se aproxima en mayor medida a una partitura real y legible, tal y como se muestra en
 la Figura~\ref{fig:midis2score_comparacion}.
 
 \begin{figure}[p]
@@ -3465,16 +3397,16 @@ la Figura~\ref{fig:midis2score_comparacion}.
       height=0.36\textheight,
       keepaspectratio
     ]{figuras/ref_score.png}
-    \caption{Referencia MIDI}
+    \caption{Partitura de referencia}
   \end{subfigure}
 
   \caption[Salidas de MFT-FiLM y Transkun procesadas por MIDI2ScoreTransformer]%
   {Salidas de MFT-FiLM y Transkun procesadas por MIDI2ScoreTransformer. En las transcripciones se observan notas azules, que representan
-  notas omitidas por los modelos pero que se encuentran en el MIDI original; y notas rojas que representan notas equivocadas, que no forman parte del MIDI original.
+  notas omitidas por los modelos pero que se encuentran en la partitura original; y notas rojas que representan notas equivocadas, que no forman parte de la referencia.
   Observamos que se trata de una secuencia de acordes con gran disonancia, muy característica del \textit{jazz}. Respecto a la duración y velocidad de las notas, se puede ver que
   ninguno de los modelos acierta de forma consistente, aunque Transkun se acerca más a la representación original. En cuanto a las notas, los primeros acordes se transcriben bastante bien
   por ambos modelos: Transkun reproduce la referencia sin omisiones y MFT-FiLM omite unas pocas notas. A medida que avanza el fragmento, aumentan los errores y omisiones, ya que se van concentrando
-  los armónicos y colas de audio de las notas pulsadas previamente. Al final del fragmento observamos que ambos modelos fallan y omiten bastantes notas. Este fragmento sugiere que Transkun se
+  los armónicos y las colas de resonancia de las notas pulsadas previamente. Al final del fragmento observamos que ambos modelos fallan y omiten bastantes notas. Este fragmento sugiere que Transkun se
   comporta mejor en situaciones características del \textit{jazz}.}
   \label{fig:midis2score_comparacion}
 \end{figure}
@@ -3483,10 +3415,10 @@ la Figura~\ref{fig:midis2score_comparacion}.
 El análisis detallado de las transcripciones ilustradas en la Figura~\ref{fig:midis2score_comparacion} revela diferencias significativas en
 el rendimiento de ambos modelos frente a la complejidad armónica y las disonancias características del \textit{jazz}. En primer lugar,
 respecto a la dimensión temporal, se observa que ninguno de los sistemas logra transcribir el ritmo con exactitud. Sin embargo,
-las duraciones predichas por el modelo Transkun se aproximan de manera considerablemente mayor a la interpretación original, superando a
+las duraciones predichas por el modelo Transkun se aproximan de forma considerablemente mejor a la interpretación original, superando a
 MFT-FiLM en este aspecto.
 
-En cuanto a la precisión tonal, la evolución del fragmento evidencia cómo la acumulación de armónicos y las colas de audio de las notas
+En cuanto a la precisión tonal, la evolución del fragmento evidencia cómo la acumulación de armónicos y las colas de resonancia de las notas
 pulsadas previamente dificultan la tarea de transcripción a medida que avanza el tiempo. Aunque los dos modelos presentan dificultades en
 la sección final, los datos demuestran una clara diferencia entre ambos. Específicamente, ambos sistemas
 registran un total de 6 notas incorrectas (falsos positivos, notas de color rojo), las cuales se concentran de forma exclusiva en los tres últimos acordes de la secuencia. No obstante, la
@@ -3502,7 +3434,7 @@ análisis perceptivo: las 5 omisiones de Transkun frente a las 17 de MFT-FiLM re
 que las métricas cuantitativas apuntan a nivel de corpus.
 
 Cabe destacar que, en el contexto del \textit{jazz}, esta consideración adquiere una dimensión especialmente relevante. A
-diferencia del repertorio clásico, donde la priorización de la precisión sobre la exhaustividad es adecuada e incluso conveniente,
+diferencia del repertorio clásico, donde la priorización de la precisión sobre el \textit{recall} es adecuada e incluso conveniente,
 el \textit{jazz} hace un uso extensivo de la disonancia como recurso expresivo fundamental. Los acordes propios de este género incorporan
 con frecuencia extensiones armónicas de novena, undécima y decimotercera, cuya presencia simultánea define en gran medida la identidad
 tímbrica y estilística del fragmento. En consecuencia, la omisión de alguno de estos componentes puede resultar más perjudicial para la
@@ -3513,7 +3445,7 @@ preservar la riqueza armónica inherente a este estilo musical.
 
 En definitiva, este análisis perceptivo del fragmento corrobora que, si bien la alta densidad armónica del final de la
 secuencia supone un desafío complejo para ambas arquitecturas, el modelo Transkun ofrece una transcripción notablemente más robusta,
-precisa y fiel a la referencia MIDI.
+precisa y fiel a la referencia.
 
 
 \section{Conclusiones}
@@ -3609,7 +3541,7 @@ Los objetivos planteados al inicio del trabajo se han alcanzado de forma satisfa
     se ha entrenado y evaluado sobre MAESTRO, obteniendo resultados competitivos y coherentes con los esperados para
     este tipo de aproximaciones.
 
-    \item \textbf{Entrenar y evaluar un modelo Transkun (\textit{semi-CRF2}), estudiando su formulación basada en
+    \item \textbf{Entrenar y evaluar un modelo Transkun (\textit{Semi-CRF V2}), estudiando su formulación basada en
     \textit{transformers}, eventos musicales y modelos \textit{semi-CRF}.}  
     Se ha analizado su formulación basada en eventos, su arquitectura \textit{transformer} y el uso de modelos
     \textit{semi-CRF} para la predicción de intervalos de nota. Los experimentos han confirmado su alto rendimiento
@@ -3633,7 +3565,7 @@ Los objetivos planteados al inicio del trabajo se han alcanzado de forma satisfa
 La principal línea de trabajo futuro consiste en disponer de conjuntos de datos más amplios, diversos y
 perfectamente alineados para distintos estilos musicales. Aunque MAESTRO ofrece pares audio--MIDI de
 gran calidad, su distribución está centrada en repertorio clásico. Para entrenar modelos con mayor
-capacidad de generalización sería necesario contar con datos \textit{performance} MIDI y audio sincronizados con precisión
+capacidad de generalización sería necesario contar con datos de \textit{performance} MIDI y audio sincronizados con precisión
 en estilos como \textit{jazz}, música contemporánea, improvisación u otros repertorios pianísticos.
 
 Esta tarea no es sencilla. La adquisición de datos de este tipo requiere instrumentación especializada,
@@ -3663,27 +3595,27 @@ precisos y útiles en contextos musicales reales.
 \bibitem{bachlechner2021rezero}
 T.~Bachlechner, B.~P. Majumder, H.~Mao, G.~Cottrell y J.~McAuley.
 \newblock ReZero is all you need: Fast convergence at large depth.
-\newblock \textit{Proceedings of the Thirty-Seventh Conference on Uncertainty in Artificial Intelligence (UAI)}, 2021.
+\newblock \textit{Proceedings of the Thirty-Seventh Conference on Uncertainty in Artificial Intelligence (UAI)}, PMLR 161:1352--1361, 2021.
 
 \bibitem{benetos2019amt}
 E.~Benetos, S.~Dixon, Z.~Duan y S.~Ewert.
 \newblock Automatic music transcription: An overview.
-\newblock \textit{IEEE Signal Processing Magazine}, vol. 36, pp. 20--30, 2019.
+\newblock \textit{IEEE Signal Processing Magazine}, 36:1:20--30, 2019.
 
 \bibitem{beyer2024midi2score}
 Tim Beyer y Angela Dai.
 \newblock End-to-end piano performance-{MIDI} to score conversion with transformers.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 2024.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 319--326, 2024.
 
 \bibitem{cheston2024jtd}
-Huw Cheston \textit{et al.}
-\newblock \textit{jazz} trio database: Automated annotation of \textit{jazz} piano trio recordings processed using audio source separation.
-\newblock \textit{Transactions of the International Society for Music Information Retrieval}, 2024.
+Huw Cheston, Joshua L. Schlichting, Ian Cross y Peter M. C. Harrison.
+\newblock Jazz Trio Database: Automated Annotation of Jazz Piano Trio Recordings Processed Using Audio Source Separation.
+\newblock \textit{Transactions of the International Society for Music Information Retrieval}, 7:1:144--158, 2024.
 
 \bibitem{davis1980mel}
 S.~Davis y P.~Mermelstein.
 \newblock Comparison of parametric representations for monosyllabic word recognition in continuously spoken sentences.
-\newblock \textit{IEEE Transactions on Acoustics, Speech, and Signal Processing}, vol. 28, pp. 357--366, 1980.
+\newblock \textit{IEEE Transactions on Acoustics, Speech, and Signal Processing}, 28:4:357--366, 1980.
 
 \bibitem{dosovitskiy2021vit}
 Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit y Neil Houlsby.
@@ -3692,8 +3624,8 @@ Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua
 
 \bibitem{edwards2023pijama}
 Drew Edwards, Simon Dixon y Emmanouil Benetos.
-\newblock PiJAMA: Piano \textit{jazz} with automatic {MIDI} annotations.
-\newblock \textit{Transactions of the International Society for Music Information Retrieval}, 2023.
+\newblock PiJAMA: Piano Jazz with automatic MIDI annotations.
+\newblock \textit{Transactions of the International Society for Music Information Retrieval}, 6:1:89--102, 2023.
 
 \bibitem{emiya2010maps}
 Valentin Emiya, Nancy Bertin, Bertrand David y Roland Badeau.
@@ -3705,35 +3637,33 @@ Y.~Fang, B.~Liao, X.~Wang, J.~Fang, J.~Qi, R.~Wu, J.~Niu y W.~Liu.
 \newblock You only look at one sequence: Rethinking transformer in vision through object detection.
 \newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2021.
 
-\bibitem{foscarin2023musicallyinformed}
-Francesco Foscarin, Katharina Hoedt, Gerhard Widmer y Maarten Grachten.
-\newblock Towards musically informed evaluation of piano transcription models.
-\newblock \textit{arXiv preprint arXiv:2406.08454}, 2024.
 
 \bibitem{foscarin2020asap}
 Francesco Foscarin, Andrew McLeod, Philippe Rigaux, Florent Jacquemard y Masahiko Sakai.
 \newblock {ASAP}: A dataset of aligned scores and performances for piano transcription.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 2020.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 534--541, 2020.
 
 \bibitem{good2001musicxml}
 M.~Good.
 \newblock {MusicXML}: An Internet-friendly format for sheet music.
 \newblock \textit{Proceedings of XML}, 2001.
+\newblock Consultar en \url{https://www.musicxml.com/publications/makemusic-recordare/xml-2001/}.
 
 \bibitem{magenta2020maestrov3}
 {Google Magenta}.
 \newblock The {MAESTRO} \textit{dataset} v3.0.0.
 \newblock 2020.
+\newblock Consultar en \url{https://magenta.withgoogle.com/datasets/maestro}.
 
 \bibitem{goto2002rwc}
 Masataka Goto, Hiroki Hashiguchi, Takuichi Nishimura y Ryuichi Oka.
 \newblock {RWC} music database: Popular, classical, and \textit{jazz} music databases.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 2002.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)}, 287--288, 2002.
 
 \bibitem{hawthorne2018onsetsframes}
 Curtis Hawthorne, Erich Elsen, Jialin Song, Adam Roberts, Ian Simon, Colin Raffel, Jesse Engel, Sageev Oore y Douglas Eck.
 \newblock Onsets and frames: Dual-objective piano transcription.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2018.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 50--57, 2018.
 
 \bibitem{hawthorne2019maestro}
 Curtis Hawthorne, Andriy Stasyuk, Adam Roberts, Ian Simon, Cheng-Zhi~Anna Huang, Sander Dieleman y Douglas Eck.
@@ -3743,7 +3673,7 @@ Curtis Hawthorne, Andriy Stasyuk, Adam Roberts, Ian Simon, Cheng-Zhi~Anna Huang,
 \bibitem{hawthorne2021seq2seq}
 C.~Hawthorne, I.~Simon, R.~Swavely, E.~Manilow y J.~Engel.
 \newblock Sequence-to-sequence piano transcription with transformers.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2021.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 246--253, 2021.
 
 \bibitem{ho2019axial}
 J.~Ho, N.~Kalchbrenner, D.~Weissenborn y T.~Salimans.
@@ -3753,12 +3683,12 @@ J.~Ho, N.~Kalchbrenner, D.~Weissenborn y T.~Salimans.
 \bibitem{kong2021highres}
 Qiuqiang Kong, Bochen Li, Xuchen Song, Yuan Wan y Yuxuan Wang.
 \newblock High-resolution piano transcription with pedals by regressing onset and offset times.
-\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 2021.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 29:3707--3717, 2021.
 
 \bibitem{kwon2020polyphonic}
 Taegyun Kwon, Dasaem Jeong y Juhan Nam.
 \newblock Polyphonic piano transcription using autoregressive multi-state note model.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2020.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 454--461, 2020.
 
 \bibitem{li2021fourier}
 Y.~Li, S.~Si, G.~Li, C.-J. Hsieh y S.~Bengio.
@@ -3768,7 +3698,7 @@ Y.~Li, S.~Si, G.~Li, C.-J. Hsieh y S.~Bengio.
 \bibitem{li2022videt}
 Y.~Li, H.~Mao, R.~Girshick y K.~He.
 \newblock Exploring plain vision transformer backbones for object detection.
-\newblock \textit{European Conference on Computer Vision (ECCV)}, 2022.
+\newblock \textit{European Conference on Computer Vision (ECCV)}, 280--296, 2022.
 
 \bibitem{loaiza2019contbernoulli}
 G.~Loaiza-Ganem y J.~P. Cunningham.
@@ -3780,15 +3710,17 @@ G.~Loaiza-Ganem y J.~P. Cunningham.
 \newblock \textit{The Complete {MIDI} 1.0 Detailed Specification}.
 \newblock MMA, 1996.
 
+\bibitem{murphy2022pml}
+Kevin Patrick Murphy.
+\newblock \textit{Probabilistic Machine Learning: An Introduction}.
+\newblock MIT Press, 2022.
+
+
 \bibitem{murphy2023adv}
 Kevin Patrick Murphy.
 \newblock \textit{Probabilistic Machine Learning: Advanced Topics}.
 \newblock MIT Press, 2023.
 
-\bibitem{murphy2022pml}
-Kevin Patrick Murphy.
-\newblock \textit{Probabilistic Machine Learning: An Introduction}.
-\newblock MIT Press, 2022.
 
 \bibitem{oppenheim2010dsp}
 A.~V. Oppenheim y R.~W. Schafer.
@@ -3798,7 +3730,7 @@ A.~V. Oppenheim y R.~W. Schafer.
 \bibitem{perez2018film}
 Ethan Perez, Florian Strub, Harm de Vries, Vincent Dumoulin y Aaron Courville.
 \newblock FiLM: Visual reasoning with a general conditioning layer.
-\newblock \textit{Proceedings of the AAAI Conference on Artificial Intelligence}, 2018.
+\newblock \textit{Proceedings of the AAAI Conference on Artificial Intelligence}, 32:1:3942--3951, 2018.
 
 
 \bibitem{pfleiderer2017jazzomat}
@@ -3809,12 +3741,12 @@ Martin Pfleiderer, Klaus Frieler, Jakob Abe{\ss}er, Wolf-Georg Zaddach y Benjami
 \bibitem{raffel2014mireval}
 Colin Raffel, Brian McFee, Eric J.~Humphrey, Justin Salamon, Oriol Nieto, Dawen Liang y Daniel P.~W. Ellis.
 \newblock mir\_eval: A transparent implementation of common {MIR} metrics.
-\newblock \textit{Proceedings of the 15th International Conference on Music Information Retrieval}, 2014.
+\newblock \textit{Proceedings of the 15th International Conference on Music Information Retrieval}, 367--372, 2014.
 
 \bibitem{ristea2022septr}
 N.-C. Ristea, R.~T. Ionescu y F.~S. Khan.
 \newblock Septr: Separable transformer for audio spectrogram processing.
-\newblock \textit{Proceedings of INTERSPEECH}, 2022.
+\newblock \textit{Proceedings of INTERSPEECH}, 4103--4107, 2022.
 
 \bibitem{ruder2017multitask}
 Sebastian Ruder.
@@ -3824,7 +3756,7 @@ Sebastian Ruder.
 \bibitem{toyama2023hftt}
 K.~Toyama, T.~Akama, Y.~Ikemiya, Y.~Takida, W.-H. Liao y Y.~Mitsufuji.
 \newblock Automatic piano transcription with hierarchical frequency-time transformer.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2023.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 215--222, 2023.
 
 \bibitem{vaswani2017attention}
 Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N.~Gomez, Łukasz Kaiser e Illia Polosukhin.
@@ -3834,24 +3766,24 @@ Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N
 \bibitem{wang2024hatanet}
 Qi Wang, Mingkuan Liu, Changchun Bao y Maoshen Jia.
 \newblock Harmonic-aware frequency and time attention for automatic piano transcription.
-\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 2024.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 32:3492--3506, 2024.
 
 \bibitem{wang2025mftfilm}
 Qi Wang, Mingkuan Liu y Maoshen Jia.
 \newblock Multitask frequency-time feature-wise linear modulation for piano transcription with pedal.
-\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 2025.
+\newblock \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 33:1049--1062, 2025.
 
 \bibitem{wei2022hppnet}
 W.~Wei, P.~Li, Y.~Yu y W.~Li.
 \newblock {HPPNet}: Modeling the harmonic structure and pitch invariance in piano transcription.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2022.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 709--716, 2022.
 
 \bibitem{yamaha_disklavier}
 Yamaha Corporation.
 \newblock \emph{Disklavier pianos.}
-\newblock Disponible en:
-\url{https://usa.yamaha.com/products/musical_instruments/pianos/disklavier/index.html}
-\newblock Consultado en: mayo de 2026.
+\newblock Consultar en
+\url{https://usa.yamaha.com/products/musical_instruments/pianos/disklavier/index.html}.
+\newblock Consultado en mayo de 2026.
 
 \bibitem{yan2021semicrf1}
 Y.~Yan, F.~Cwitkowitz y Z.~Duan.
@@ -3861,7 +3793,7 @@ Y.~Yan, F.~Cwitkowitz y Z.~Duan.
 \bibitem{yan2024transkun}
 Y.~Yan y Z.~Duan.
 \newblock Scoring time intervals using non-hierarchical transformer for automatic piano transcription.
-\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 2024.
+\newblock \textit{Proceedings of the International Society for Music Information Retrieval (ISMIR)}, 973--980, 2024.
 
 \bibitem{zhang2019rmsnorm}
 B.~Zhang y R.~Sennrich.
@@ -3884,10 +3816,10 @@ B.~Zhang y R.~Sennrich.
 \section{Entorno de ejecución y dependencias}
 
 El entrenamiento del modelo MFT-FiLM se llevó a cabo en el clúster de cómputo
-de alto rendimiento \textbf{tensor}, perteneciente al Departamento de Sistemas
+de alto rendimiento \texttt{\textbf{tensor}}, perteneciente al Departamento de Sistemas
 Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia.
-Este sistema está formado por un único nodo equipado con \textbf{$503\,\text{GB}$
-de memoria RAM} y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S}
+Este sistema está formado por un único nodo equipado con $503\,\text{GB}$
+de memoria RAM y cuatro unidades de procesamiento gráfico \textbf{NVIDIA L40S}
 con $48\,\text{GB}$ de memoria GDDR6 ECC cada una. Las GPUs L40S pertenecen a
 la familia \foreign{english}{Ada Lovelace}, orientadas a cargas de trabajo de
 inteligencia artificial en entornos de servidor. El hardware empleado en el
@@ -3896,7 +3828,7 @@ $24\,\text{GB}$ de VRAM cada una~\cite{wang2025mftfilm}; la L40S cuenta
 individualmente con $48\,\text{GB}$, lo que permitió alojar el modelo con el
 tamaño de lote requerido sin restricciones de memoria.
 
-El sistema de gestión de trabajos del clúster es \textbf{SLURM}, que organiza
+El sistema de gestión de trabajos del clúster es \texttt{SLURM}, que organiza
 la ejecución mediante dos colas principales: \texttt{docencia}, para trabajos
 de duración inferior a 24 horas, y \texttt{long}, para trabajos de hasta
 72 horas. Dada la duración estimada de entrenamiento reportada por los
@@ -3905,7 +3837,7 @@ autores~\cite{wang2025mftfilm}, fue necesario emplear la cola \texttt{long}.
 El entorno software se configuró sobre Python~3.12 con \texttt{PyTorch} y
 \texttt{CUDA} compatibles con las GPUs L40S, y se instalaron las dependencias
 específicas del repositorio original (incluyendo \texttt{librosa},
-\texttt{pretty\_midi}, \texttt{mireval} y \texttt{joblib}) en un entorno
+\texttt{pretty\_midi}, \texttt{mir\_eval} y \texttt{joblib}) en un entorno
 virtual aislado para garantizar la reproducibilidad del experimento.
 
 Durante la preparación del entorno surgieron dos incidencias relevantes. La
@@ -3961,7 +3893,7 @@ efecto y casi duplicando el rendimiento efectivo.
 El clúster \texttt{tensor} impone una duración máxima de \textbf{72 horas} para
 los trabajos sometidos a la cola \texttt{long}. Dado que cada época requirió
 aproximadamente 83 minutos, el trabajo de entrenamiento fue interrumpido por
-SLURM al alcanzar dicho límite temporal, habiendo completado únicamente
+\texttt{SLURM} al alcanzar dicho límite temporal, habiendo completado únicamente
 \textbf{30 de las 60 épocas planificadas}. A pesar de no haber completado el
 ciclo de entrenamiento descrito en el artículo original, el mecanismo de
 validación dinámica y guardado automático de \textit{checkpoints} preservó el
@@ -3977,7 +3909,8 @@ La Tabla~\ref{tab:config} resume los parámetros empleados~\cite{wang2025mftfilm
 
 \begin{table}[H]
   \centering
-  \caption{Parámetros de configuración establecidos en \texttt{constant\_macro.py}
+  \caption[Parámetros de configuración establecidos
+  para el entrenamiento de MFT-FiLM]{Parámetros de configuración establecidos en \texttt{constant\_macro.py}
   para el entrenamiento de MFT-FiLM.}
   \label{tab:config}
   \begin{tabular}{lll}
@@ -4038,14 +3971,14 @@ trabajo original.
 \section{Entorno de ejecución y dependencias}
 
 El entrenamiento del modelo Transkun se llevó a cabo en el clúster de cómputo
-de alto rendimiento \textbf{tensor}, perteneciente al Departamento de Sistemas
+de alto rendimiento \texttt{tensor}, perteneciente al Departamento de Sistemas
 Informáticos y Computación (DSIC) de la Universidad Politécnica de Valencia.
 Dado que las características generales del clúster ya se describen en el
 Anexo~\ref{anx:mft_config}, en este anexo se recogen únicamente los aspectos
 específicos necesarios para reproducir el experimento con Transkun.
 
 El entrenamiento se ejecutó sobre una única GPU \textbf{NVIDIA L40S} de
-$48\,\text{GB}$ mediante el gestor de colas \textbf{SLURM}, empleando la cola
+$48\,\text{GB}$ mediante el gestor de colas \texttt{SLURM}, empleando la cola
 \texttt{long}. El artículo original de Transkun emplea dos GPUs NVIDIA
 RTX~4090; en este trabajo se utilizó una sola GPU L40S, lo que permitió alojar
 el modelo con el tamaño de lote requerido, aunque a costa de un mayor tiempo de
@@ -4075,17 +4008,10 @@ entrenamiento se generaron los archivos de metadatos requeridos por Transkun:
 ficheros contienen la información necesaria para indexar las piezas musicales y
 sus correspondientes anotaciones MIDI.
 
-Durante la carga del conjunto de entrenamiento, Transkun registró un total de
-\textbf{962 piezas} en el subconjunto de entrenamiento, con una duración
-acumulada de aproximadamente \textbf{573277 segundos}, equivalentes a unas
-\textbf{159 horas} de audio. El subconjunto de validación contenía
-\textbf{137 piezas}, con una duración aproximada de \textbf{69946 segundos}.
-Estos valores corresponden al número de piezas indexadas, no al número de
-segmentos temporales utilizados internamente durante el entrenamiento.
 
 Como parte de la preparación de los datos, se verificó que los audios estuvieran
 disponibles en formato \texttt{wav} y a la frecuencia de muestreo esperada por
-la configuración del modelo, \textbf{44100 Hz}. Además, se homogeneizó la
+la configuración del modelo, \textbf{$44\,100$ Hz}. Además, se homogeneizó la
 lectura de audio para evitar la mezcla de señales mono y estéreo dentro de un
 mismo lote. Para ello, las señales estéreo se convirtieron a mono durante la
 carga, promediando ambos canales. Esta operación garantiza que todos los
@@ -4105,7 +4031,7 @@ original se ajustaron los parámetros como se presentan en la Tabla~\ref{tab:tra
 
 \begin{table}[H]
   \centering
-  \caption{Parámetros principales de configuración empleados en el experimento
+  \caption[Parámetros principales de configuración establecidos para el entrenamiento de Transkun]{Parámetros principales de configuración empleados en el experimento
   Transkun.}
   \label{tab:transkun_config}
   \begin{tabular}{lll}
@@ -4113,7 +4039,7 @@ original se ajustaron los parámetros como se presentan en la Tabla~\ref{tab:tra
     \textbf{Parámetro} & \textbf{Valor} & \textbf{Descripción} \\
     \hline
     \texttt{fs}                         & 44100 & Frecuencia de muestreo \\
-    \texttt{n\_mels}                    & 229   & Número de bandas mel \\
+    \texttt{n\_mels}                    & 229   & Número de bandas Mel \\
     \texttt{segmentSizeInSecond}        & 16    & Duración del segmento de entrada \\
     \texttt{segmentHopSizeInSecond}     & 8     & Salto entre segmentos \\
     \texttt{windowSize}                 & 4096  & Tamaño de ventana espectral \\
@@ -4132,7 +4058,7 @@ original se ajustaron los parámetros como se presentan en la Tabla~\ref{tab:tra
   \end{tabular}
 \end{table}
 
-El trabajo de entrenamiento se lanzó mediante un script de \texttt{SLURM} que
+El trabajo de entrenamiento se lanzó mediante un \textit{script} de \texttt{SLURM} que
 reservaba una GPU completa, necesaria para alojar el modelo. El fichero de salida del modelo, \texttt{model.pt}, se utilizó
 también como punto de guardado para permitir la reanudación del entrenamiento
 en caso de interrupción por el límite temporal de la cola.
