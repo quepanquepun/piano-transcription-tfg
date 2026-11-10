@@ -28,7 +28,7 @@ The pipeline is composed of two stages:
    tokenized performance MIDI into score tokens (pitch spelling, note values, voices, staff assignment). The
    checkpoint released by the original authors is used.
 
-### Contributions of this work
+### Contributions
 
 - Training and evaluation of MFT-FiLM and Transkun on MAESTRO v3.0.0; the resulting checkpoints are released here.
 - **Single-file score inference** for MIDI2ScoreTransformer, whose public code only supports batch evaluation on
