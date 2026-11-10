@@ -86,8 +86,7 @@ e.g. [MuseScore](https://musescore.org).
 ├── patches/                   Modifications applied to the original MIDI2ScoreTransformer code
 ├── envs/                      Conda environment specifications (one per model)
 ├── setup/                     Installation and weight-download scripts
-├── weights/                   Model checkpoints (downloaded; not tracked by git)
-└── thesis/                    Thesis document and LaTeX sources
+└── weights/                   Model checkpoints (downloaded; not tracked by git)
 ```
 
 ## Acknowledgements
