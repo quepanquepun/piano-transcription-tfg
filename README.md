@@ -11,7 +11,7 @@ learning*. Given a solo piano recording, the system produces a **performance MID
 audio ──► [ MFT-FiLM | Transkun ] ──► performance MIDI ──► [ MIDI2ScoreTransformer ] ──► MusicXML score
 ```
 
-The full description of the methodology, training procedure, experimental setup and evaluation is available in the
+The full description of the methodology, training procedure, experimental setup and evaluation (also in *jazz* music) is available in the
 thesis document: [`thesis`](https://riunet.upv.es/entities/publication/e7c74abd-5e89-473a-97ca-24c88b4b5e04).
 
 ## Overview
