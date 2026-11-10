@@ -1,13 +1,35 @@
+# Upstream repositories (fetched by setup/setup.sh)
+third_party/
+thesis/
+
+
+# Model weights (distributed through GitHub Releases)
+weights/**/*.pt
+weights/**/*.pth
+weights/**/*.ckpt
+
+# Outputs generated when trying the tool
+*.mid
+*.midi
+*.musicxml
+!examples/**
+
+# LaTeX build artifacts (thesis/)
 *.aux
-*.log
-*.out
-*.toc
 *.bbl
 *.blg
-*.bcf
-*.run.xml
-*.synctex.gz
 *.fdb_latexmk
 *.fls
 *.lof
 *.lot
+*.out
+*.toc
+*.synctex.gz
+*.log
+
+# Python / OS
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+*:Zone.Identifier

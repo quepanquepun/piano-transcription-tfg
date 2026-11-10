@@ -1,0 +1,13 @@
+# Transkun (audio -> MIDI).
+name: tfg-transkun
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - ffmpeg
+  - pip
+  - setuptools<81
+  - pip:
+      - torch==2.10.0
+      - torchaudio==2.10.0
+      - transkun==2.0.1
